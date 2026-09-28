@@ -61,7 +61,7 @@ The `deploy-functions` job is manual and deploys `check-embed`, `slack-directory
 
 ## Known limits
 
-- Pins record the viewport-relative position at creation time and do not follow page scrolling.
+- Pins with a saved element selector follow that element while it is available; comments without a selector fall back to their original viewport-relative position.
 - Some SSO prototypes cannot be authenticated inside an iframe. The viewer provides a popup sign-in flow and a new-tab fallback.
 - Safari and Firefox may still require opening SSO-heavy prototypes in a new tab.
 - The iframe sandbox intentionally does not allow top-level navigation.

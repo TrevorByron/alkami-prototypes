@@ -110,6 +110,11 @@ function PrototypeCard({ prototype }: { prototype: PrototypeSummary }) {
     <Link to={`/p/${prototype.id}`} className="group block">
       <Card className="overflow-hidden transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-xl group-hover:shadow-indigo-100/40 dark:group-hover:shadow-black/20">
         <div className="h-2 bg-gradient-to-r from-indigo-500 to-violet-500" />
+        <div className="relative h-36 overflow-hidden border-b bg-muted">
+          {prototype.embed_mode === "live" ? <div className="pointer-events-none absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.3] bg-white"><iframe title={`${prototype.name} preview`} src={prototype.url} loading="lazy" tabIndex={-1} className="h-full w-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads" /></div> : null}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/65 via-slate-950/5 to-transparent" />
+          <div className="absolute inset-x-4 bottom-3 flex items-end justify-between gap-3 text-white"><div className="flex min-w-0 items-center gap-2"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/15 backdrop-blur">{prototype.favicon_url ? <img src={prototype.favicon_url} alt="" className="h-4 w-4" /> : <span className="text-xs font-semibold">{host.slice(0, 1).toUpperCase()}</span>}</div><span className="truncate text-xs font-medium">{prototype.embed_mode === "live" ? "Live preview" : "Opens in a new tab"}</span></div><ArrowUpRight className="h-4 w-4 shrink-0" /></div>
+        </div>
         <CardHeader className="pb-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
@@ -140,7 +145,7 @@ function EmptyLibrary({ onAdd }: { onAdd: () => void }) {
 }
 
 function SkeletonGrid() {
-  return <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{[1, 2, 3].map((item) => <Card key={item} className="overflow-hidden"><Skeleton className="h-2 rounded-none" /><CardHeader><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-xl" /><div className="space-y-2"><Skeleton className="h-4 w-36" /><Skeleton className="h-3 w-48" /></div></div></CardHeader><CardContent><Skeleton className="h-9 w-full" /><Skeleton className="mt-4 h-3 w-24" /></CardContent></Card>)}</div>;
+  return <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{[1, 2, 3].map((item) => <Card key={item} className="overflow-hidden"><Skeleton className="h-2 rounded-none" /><Skeleton className="h-36 rounded-none" /><CardHeader><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-xl" /><div className="space-y-2"><Skeleton className="h-4 w-36" /><Skeleton className="h-3 w-48" /></div></div></CardHeader><CardContent><Skeleton className="h-9 w-full" /><Skeleton className="mt-4 h-3 w-24" /></CardContent></Card>)}</div>;
 }
 
 function LibraryError({ message, onRetry }: { message: string; onRetry: () => void }) {

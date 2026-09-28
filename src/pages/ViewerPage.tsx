@@ -144,6 +144,27 @@ export function ViewerPage({ theme, onToggleTheme }: { theme: Theme; onToggleThe
     return () => window.removeEventListener("message", handleNavigationMessage);
   }, [prototype?.url, setActivePage]);
 
+  useEffect(() => {
+    if (!prototype?.url || prototype.embed_mode !== "live") return;
+    let timer: number | undefined;
+    const syncSameOriginFrame = () => {
+      try {
+        const frameWindow = iframeRef.current?.contentWindow;
+        if (frameWindow) {
+          const nextPageUrl = normalizePageUrl(frameWindow.location.href, prototype.url);
+          if (nextPageUrl !== pageUrlRef.current) setActivePage(nextPageUrl);
+          const nextScrollY = frameWindow.scrollY;
+          setFrameContext((current) => current.scrollY === nextScrollY ? current : { ...current, scrollY: nextScrollY });
+        }
+      } catch {
+        // Cross-origin frames use the postMessage bridge instead.
+      }
+      timer = window.setTimeout(syncSameOriginFrame, 250);
+    };
+    timer = window.setTimeout(syncSameOriginFrame, 250);
+    return () => { if (timer) window.clearTimeout(timer); };
+  }, [prototype?.embed_mode, prototype?.url, remountKey, setActivePage]);
+
   const handleFrameLoad = () => {
     if (!prototype?.url || !iframeRef.current) return;
     try {
@@ -268,7 +289,10 @@ export function ViewerPage({ theme, onToggleTheme }: { theme: Theme; onToggleThe
   const scale = Math.min(1, Math.max(0.48, (stageWidth - 48) / viewport));
   const currentPageUrl = pageUrl ?? normalizePageUrl(prototype.url, prototype.url);
   const pageComments = comments.filter((comment) => comment.page_url === null || normalizePageUrl(comment.page_url, prototype.url) === currentPageUrl);
-  const pins = pageComments.filter((comment) => comment.viewport === viewport && comment.x_pct !== null && comment.y_pct !== null && (comment.status === "open" || showResolved));
+  const pins = pageComments.filter((comment) => comment.viewport === viewport && comment.x_pct !== null && comment.y_pct !== null && (comment.status === "open" || showResolved)).map((comment) => {
+    const position = elementPinPosition(comment, iframeRef.current);
+    return position ? { ...comment, x_pct: position.x_pct, y_pct: position.y_pct } : comment;
+  });
   const selected = pageComments.find((comment) => comment.id === selectedId) ?? null;
   const userInitials = (profile?.name ?? "Slack member").split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 
@@ -321,6 +345,21 @@ function ViewerLoading({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: 
 function ViewerError({ theme, onToggleTheme, message }: { theme: Theme; onToggleTheme: () => void; message: string }) { return <div className="min-h-screen bg-background"><div className="flex h-16 items-center justify-between border-b px-5"><Link to="/" className="flex items-center gap-2"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Sparkles className="h-4 w-4" /></span><span className="font-semibold">commentor</span></Link><Button variant="ghost" size="icon" onClick={onToggleTheme}>{theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}</Button></div><div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-6"><Card className="max-w-md text-center"><CardHeader><CardTitle>We couldn’t open this prototype</CardTitle><CardDescription>{message}</CardDescription></CardHeader><CardContent><Button asChild><Link to="/"><ArrowLeft className="h-4 w-4" />Back to library</Link></Button></CardContent></Card></div></div>; }
 function initials(name: string) { return name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(); }
 function timeAgo(value: string) { const minutes = Math.max(1, Math.round((Date.now() - new Date(value).getTime()) / 60000)); if (minutes < 60) return `${minutes}m`; const hours = Math.round(minutes / 60); if (hours < 24) return `${hours}h`; return `${Math.round(hours / 24)}d`; }
+function elementPinPosition(comment: CommentRecord, frame: HTMLIFrameElement | null) {
+  if (!comment.selector || !frame) return null;
+  try {
+    const element = frame.contentDocument?.querySelector(comment.selector);
+    const elementRect = element?.getBoundingClientRect();
+    const frameRect = frame.getBoundingClientRect();
+    if (!elementRect || !frameRect.width || !frameRect.height) return null;
+    return {
+      x_pct: ((elementRect.left + elementRect.width / 2 - frameRect.left) / frameRect.width) * 100,
+      y_pct: ((elementRect.top + elementRect.height / 2 - frameRect.top) / frameRect.height) * 100,
+    };
+  } catch {
+    return null;
+  }
+}
 function cssSelector(element: Element) {
   const parts: string[] = [];
   let current: Element | null = element;
