@@ -4,6 +4,34 @@ import { useAuth } from "@/auth/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import type { PrototypeSummary } from "@/lib/types";
 
+export function usePrototype(id: string | undefined) {
+  const { user } = useAuth();
+  const [prototype, setPrototype] = useState<PrototypeSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!supabase || !user || !id) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const { data, error: queryError } = await supabase.from("prototypes").select("id, name, url, description, owner_slack_id, owner_name, slack_channel_id, slack_channel_name, embed_mode, embed_reason, favicon_url, created_by, created_at, updated_at").eq("id", id).maybeSingle();
+    if (queryError || !data) {
+      setError(queryError?.message ?? "Prototype not found.");
+      setLoading(false);
+      return;
+    }
+    setPrototype({ ...(data as PrototypeSummary), open_comment_count: 0 });
+    setError(null);
+    setLoading(false);
+  }, [id, user]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  return { prototype, loading, error, refresh: load };
+}
+
 export function usePrototypes() {
   const { user } = useAuth();
   const [prototypes, setPrototypes] = useState<PrototypeSummary[]>([]);

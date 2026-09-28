@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link, Route, Routes, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowUpRight, Check, ChevronDown, CircleHelp, ExternalLink, LayoutGrid, MessageSquare, Moon, Plus, Search, Sparkles, Sun } from "lucide-react";
+import { Link, Route, Routes, useNavigate } from "react-router-dom";
+import { ArrowLeft, ArrowUpRight, CircleHelp, LayoutGrid, MessageSquare, Moon, Plus, Search, Sparkles, Sun } from "lucide-react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -12,9 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Toaster } from "@/components/ui/sonner";
 import { usePrototypes } from "@/hooks/usePrototypes";
 import type { PrototypeSummary } from "@/lib/types";
 import { SignIn } from "@/pages/SignIn";
+import { ViewerPage } from "@/pages/ViewerPage";
 
 type Theme = "light" | "dark";
 
@@ -26,8 +28,9 @@ function App() {
       <Routes>
         <Route path="/signin" element={<SignIn theme={theme} onToggleTheme={() => setTheme(theme === "light" ? "dark" : "light")} />} />
         <Route path="/" element={<ProtectedRoute><Library theme={theme} onToggleTheme={() => setTheme(theme === "light" ? "dark" : "light")} /></ProtectedRoute>} />
-        <Route path="/p/:prototypeId" element={<ProtectedRoute><Viewer theme={theme} onToggleTheme={() => setTheme(theme === "light" ? "dark" : "light")} /></ProtectedRoute>} />
+        <Route path="/p/:prototypeId" element={<ProtectedRoute><ViewerPage theme={theme} onToggleTheme={() => setTheme(theme === "light" ? "dark" : "light")} /></ProtectedRoute>} />
       </Routes>
+      <Toaster />
     </div>
   );
 }
@@ -153,6 +156,7 @@ function formatRelativeTime(value: string) {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
+/* Legacy viewer shell retained in history; the functional viewer lives in ViewerPage.tsx.
 function Viewer({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
   const { prototypeId } = useParams();
   const [mode, setMode] = useState<"browse" | "comment">("browse");
@@ -177,5 +181,6 @@ function Viewer({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => v
     </div>
   );
 }
+*/
 
 export default App;
