@@ -2,12 +2,15 @@ import { useState } from "react";
 import { Link, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowUpRight, Check, ChevronDown, CircleHelp, ExternalLink, LayoutGrid, MessageSquare, Moon, Plus, Search, Sparkles, Sun } from "lucide-react";
 
+import { useAuth } from "@/auth/AuthProvider";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { SignIn } from "@/pages/SignIn";
 
 type Theme = "light" | "dark";
 
@@ -23,8 +26,9 @@ function App() {
   return (
     <div className={theme === "dark" ? "dark" : ""}>
       <Routes>
-        <Route path="/" element={<Library theme={theme} onToggleTheme={() => setTheme(theme === "light" ? "dark" : "light")} />} />
-        <Route path="/p/:prototypeId" element={<Viewer theme={theme} onToggleTheme={() => setTheme(theme === "light" ? "dark" : "light")} />} />
+        <Route path="/signin" element={<SignIn theme={theme} onToggleTheme={() => setTheme(theme === "light" ? "dark" : "light")} />} />
+        <Route path="/" element={<ProtectedRoute><Library theme={theme} onToggleTheme={() => setTheme(theme === "light" ? "dark" : "light")} /></ProtectedRoute>} />
+        <Route path="/p/:prototypeId" element={<ProtectedRoute><Viewer theme={theme} onToggleTheme={() => setTheme(theme === "light" ? "dark" : "light")} /></ProtectedRoute>} />
       </Routes>
     </div>
   );
@@ -36,6 +40,9 @@ function AppMark() {
 
 function TopBar({ theme, onToggleTheme, viewer = false }: { theme: Theme; onToggleTheme: () => void; viewer?: boolean }) {
   const navigate = useNavigate();
+  const { profile, user, signOut } = useAuth();
+  const displayName = profile?.name ?? user?.email ?? "Slack member";
+  const initials = displayName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card/85 px-5 backdrop-blur md:px-8">
@@ -53,7 +60,8 @@ function TopBar({ theme, onToggleTheme, viewer = false }: { theme: Theme; onTogg
           {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
         </Button>
         <Button variant="ghost" className="hidden gap-2 text-muted-foreground sm:flex"><CircleHelp className="h-4 w-4" />Help</Button>
-        <Avatar className="ml-1 h-8 w-8 border border-border"><AvatarFallback className="bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">TB</AvatarFallback></Avatar>
+        <Button variant="ghost" className="hidden text-muted-foreground sm:flex" onClick={() => void signOut()}>Sign out</Button>
+        <Avatar className="ml-1 h-8 w-8 border border-border"><AvatarFallback className="bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">{initials}</AvatarFallback></Avatar>
       </div>
     </header>
   );
