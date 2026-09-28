@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { useCommentThreads } from "@/hooks/useCommentThreads";
 import { usePrototype } from "@/hooks/usePrototypes";
+import { isDemoMode } from "@/lib/demoMode";
+import { addDemoComment, addDemoReply, updateDemoComment } from "@/lib/demoStore";
 import { notifySlack } from "@/lib/notifySlack";
 import { supabase } from "@/lib/supabase";
 import type { CommentRecord, Viewport } from "@/lib/types";
@@ -100,8 +102,14 @@ export function ViewerPage({ theme, onToggleTheme }: { theme: Theme; onToggleThe
   const openGeneralComposer = () => { setMode("comment"); setComposer({ xPct: null, yPct: null, left: 24, top: 24 }); setBody(""); };
 
   const saveComment = async () => {
-    if (!supabase || !user || !prototypeId || !body.trim()) return;
+    if (!user || !prototypeId || !body.trim()) return;
     setSaving(true);
+    if (isDemoMode) {
+      addDemoComment({ prototype_id: prototypeId, body: body.trim(), screen_label: screenLabel.trim() || null, viewport, x_pct: composer?.xPct ?? null, y_pct: composer?.yPct ?? null });
+      setSaving(false); if (screenLabel.trim()) window.localStorage.setItem("commentor:last-screen-label", screenLabel.trim());
+      setComposer(null); setBody(""); toast.success("Comment added"); await refresh(); return;
+    }
+    if (!supabase) { setSaving(false); return; }
     const { data: inserted, error: insertError } = await supabase.from("comments").insert({ prototype_id: prototypeId, author_id: user.id, body: body.trim(), screen_label: screenLabel.trim() || null, viewport, x_pct: composer?.xPct ?? null, y_pct: composer?.yPct ?? null, scroll_y: 0 }).select("id").single();
     setSaving(false);
     if (insertError) { toast.error(insertError.message); return; }
@@ -139,16 +147,21 @@ function ThreadDetail({ comment, onRefresh }: { comment: CommentRecord; onRefres
   const canResolve = comment.status === "open";
 
   async function addReply() {
-    if (!supabase || !user || !reply.trim()) return;
-    setPending(true); const { data: inserted, error } = await supabase.from("replies").insert({ comment_id: comment.id, author_id: user.id, body: reply.trim() }).select("id").single(); setPending(false);
+    if (!user || !reply.trim()) return;
+    setPending(true);
+    if (isDemoMode) { addDemoReply({ comment_id: comment.id, body: reply.trim() }); setPending(false); setReply(""); toast.success("Reply added"); await onRefresh(); return; }
+    if (!supabase) { setPending(false); return; }
+    const { data: inserted, error } = await supabase.from("replies").insert({ comment_id: comment.id, author_id: user.id, body: reply.trim() }).select("id").single(); setPending(false);
     if (error) { toast.error(error.message); return; }
     setReply(""); toast.success("Reply added"); await onRefresh(); if (inserted?.id) void notifySlack("reply", inserted.id);
   }
 
   async function updateStatus(status: "open" | "resolved") {
-    if (!supabase || !user) return;
+    if (!user) return;
     setPending(true);
     const values = status === "resolved" ? { status, resolved_by: user.id, resolved_at: new Date().toISOString(), resolution_note: note.trim() || null } : { status, resolved_by: null, resolved_at: null, resolution_note: null };
+    if (isDemoMode) { updateDemoComment(comment.id, values); setPending(false); setNote(""); toast.success(status === "resolved" ? "Thread resolved" : "Thread reopened"); await onRefresh(); return; }
+    if (!supabase) { setPending(false); return; }
     const { error } = await supabase.from("comments").update(values).eq("id", comment.id); setPending(false);
     if (error) { toast.error(error.message); return; }
     setNote(""); toast.success(status === "resolved" ? "Thread resolved" : "Thread reopened"); await onRefresh(); void notifySlack(status === "resolved" ? "resolved" : "reopened", comment.id);

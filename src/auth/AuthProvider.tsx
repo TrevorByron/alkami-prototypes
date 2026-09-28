@@ -2,6 +2,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 
+import { isDemoMode } from "@/lib/demoMode";
+import { demoProfile } from "@/lib/demoStore";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
 
 export type Profile = {
@@ -25,6 +27,16 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+const demoUser = {
+  id: demoProfile.id,
+  aud: "authenticated",
+  role: "authenticated",
+  email: demoProfile.email,
+  app_metadata: { provider: "demo", providers: ["demo"] },
+  user_metadata: { name: demoProfile.name },
+  created_at: "2026-01-01T00:00:00.000Z",
+} as User;
 
 function readClaim(user: User, keys: string[]) {
   const metadata = { ...user.user_metadata, ...user.app_metadata } as Record<string, unknown>;
@@ -52,13 +64,13 @@ function friendlyAuthError(error: unknown) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [status, setStatus] = useState<AuthStatus>(supabaseConfigured ? "loading" : "unconfigured");
+  const [status, setStatus] = useState<AuthStatus>(isDemoMode ? "signed_in" : supabaseConfigured ? "loading" : "unconfigured");
   const [error, setError] = useState<string | null>(null);
 
   const clearSession = useCallback(() => {
     setUser(null);
     setProfile(null);
-    setStatus(supabaseConfigured ? "signed_out" : "unconfigured");
+    setStatus(isDemoMode ? "signed_out" : supabaseConfigured ? "signed_out" : "unconfigured");
   }, []);
 
   const hydrateSession = useCallback(async (session: Session | null) => {
@@ -91,6 +103,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [clearSession]);
 
   useEffect(() => {
+    if (isDemoMode) {
+      setUser(demoUser);
+      setProfile(demoProfile);
+      setStatus("signed_in");
+      return;
+    }
     if (!supabase) return;
 
     let active = true;
@@ -109,6 +127,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [hydrateSession]);
 
   const signInWithSlack = useCallback(async () => {
+    if (isDemoMode) {
+      setUser(demoUser);
+      setProfile(demoProfile);
+      setStatus("signed_in");
+      return;
+    }
     if (!supabase) {
       setError("Add the Supabase URL and anon key before signing in.");
       return;
@@ -125,10 +149,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    if (isDemoMode) {
+      clearSession();
+      return;
+    }
     if (!supabase) return;
     const { error: signOutError } = await supabase.auth.signOut();
     if (signOutError) setError(friendlyAuthError(signOutError));
-  }, []);
+  }, [clearSession]);
 
   const value = useMemo(() => ({ user, profile, status, error, signInWithSlack, signOut }), [error, profile, signInWithSlack, signOut, status, user]);
 

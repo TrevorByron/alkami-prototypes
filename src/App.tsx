@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
 import { usePrototypes } from "@/hooks/usePrototypes";
+import { isDemoMode } from "@/lib/demoMode";
 import type { PrototypeSummary } from "@/lib/types";
 import { SignIn } from "@/pages/SignIn";
 import { ViewerPage } from "@/pages/ViewerPage";
@@ -80,7 +81,7 @@ function Library({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => 
       <main className="mx-auto max-w-7xl px-5 py-10 md:px-8 md:py-14">
         <section className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
-            <Badge variant="muted" className="mb-4 gap-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200"><LayoutGrid className="h-3.5 w-3.5" />Workspace</Badge>
+            <div className="mb-4 flex items-center gap-2"><Badge variant="muted" className="gap-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200"><LayoutGrid className="h-3.5 w-3.5" />Workspace</Badge>{isDemoMode ? <Badge variant="outline" className="border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-300">Local demo mode</Badge> : null}</div>
             <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Your prototypes</h1>
             <p className="mt-2 max-w-lg text-muted-foreground">A calm place to review early ideas, leave precise feedback, and keep conversations moving.</p>
           </div>

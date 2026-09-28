@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { useSlackDirectory } from "@/hooks/useSlackDirectory";
+import { isDemoMode } from "@/lib/demoMode";
+import { createDemoPrototype } from "@/lib/demoStore";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import type { EmbedCheck, SlackChannel, SlackUser } from "@/lib/types";
@@ -55,6 +57,15 @@ export function AddPrototypeDialog({ open, onOpenChange, onCreated }: Props) {
       return;
     }
     setChecking(true); setFormError(null); setCheck(null);
+    if (isDemoMode) {
+      const parsed = new URL(normalized);
+      const blocked = /(^|\.)github\.com$/i.test(parsed.hostname);
+      const demoCheck: EmbedCheck = { embeddable: !blocked, reason: blocked ? "GitHub prevents embedding in another application." : "Demo mode marked this URL as embeddable.", final_url: normalized, title: parsed.hostname, favicon_url: `${parsed.origin}/favicon.ico`, requires_sign_in: false };
+      setUrl(normalized); setCheck(demoCheck);
+      if (!name.trim()) setName(parsed.hostname);
+      setChecking(false);
+      return;
+    }
     const { data, error } = await supabase?.functions.invoke<EmbedCheck>("check-embed", { body: { url: normalized } }) ?? { data: null, error: new Error("Supabase is not configured.") };
     if (error || !data) {
       setFormError(error?.message ?? "We could not check this URL.");
@@ -68,11 +79,16 @@ export function AddPrototypeDialog({ open, onOpenChange, onCreated }: Props) {
 
   async function savePrototype(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!supabase || !user) return;
     if (!check) { setFormError("Check the URL before saving."); return; }
     if (!owner || !channel) { setFormError("Choose an owner and Slack channel."); return; }
     if (!name.trim()) { setFormError("Add a name for this prototype."); return; }
     setSaving(true); setFormError(null);
+    if (isDemoMode && user) {
+      const demoPrototype = createDemoPrototype({ name: name.trim(), url: normalizeUrl(url), description: description.trim() || null, owner_slack_id: owner.id, owner_name: owner.name, slack_channel_id: channel.id, slack_channel_name: channel.name, embed_mode: check.embeddable ? "live" : "new_tab", embed_reason: check.reason, favicon_url: check.favicon_url });
+      onCreated(); reset(); onOpenChange(false); navigate(`/p/${demoPrototype.id}`);
+      return;
+    }
+    if (!supabase || !user) return;
     const { data, error } = await supabase.from("prototypes").insert({
       name: name.trim(), url: normalizeUrl(url), description: description.trim() || null,
       owner_slack_id: owner.id, owner_name: owner.name, slack_channel_id: channel.id, slack_channel_name: channel.name,

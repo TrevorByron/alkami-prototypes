@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { isDemoMode } from "@/lib/demoMode";
+import { listDemoComments } from "@/lib/demoStore";
 import { supabase } from "@/lib/supabase";
 import type { CommentAuthor, CommentRecord, ReplyRecord } from "@/lib/types";
 
@@ -11,6 +13,12 @@ export function useCommentThreads(prototypeId: string | undefined) {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (isDemoMode) {
+      setComments(prototypeId ? listDemoComments(prototypeId) : []);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     if (!supabase || !user || !prototypeId) {
       setComments([]);
       setLoading(false);
@@ -44,7 +52,7 @@ export function useCommentThreads(prototypeId: string | undefined) {
 
   useEffect(() => {
     void load();
-    if (!supabase || !prototypeId) return;
+    if (isDemoMode || !supabase || !prototypeId) return;
     const channel = supabase.channel(`prototype-comments-${prototypeId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "comments", filter: `prototype_id=eq.${prototypeId}` }, () => void load())
       .on("postgres_changes", { event: "*", schema: "public", table: "replies" }, () => void load())

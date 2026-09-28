@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { isDemoMode } from "@/lib/demoMode";
+import { getDemoPrototype, listDemoPrototypes } from "@/lib/demoStore";
 import { supabase } from "@/lib/supabase";
 import type { PrototypeSummary } from "@/lib/types";
 
@@ -11,6 +13,12 @@ export function usePrototype(id: string | undefined) {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (isDemoMode) {
+      setPrototype(id ? getDemoPrototype(id) : null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     if (!supabase || !user || !id) {
       setLoading(false);
       return;
@@ -39,6 +47,12 @@ export function usePrototypes() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (isDemoMode) {
+      setPrototypes(listDemoPrototypes());
+      setError(null);
+      setLoading(false);
+      return;
+    }
     if (!supabase || !user) {
       setPrototypes([]);
       setLoading(false);
