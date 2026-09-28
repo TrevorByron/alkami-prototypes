@@ -200,7 +200,7 @@ function openConversationCount(prototypes: PrototypeSummary[]) {
 }
 
 function contributorCount(prototypes: PrototypeSummary[]) {
-  return new Set(prototypes.map((prototype) => prototype.owner_slack_id)).size;
+  return new Set(prototypes.map((prototype) => prototype.owner_id ?? prototype.created_by ?? prototype.owner_slack_id).filter(Boolean)).size;
 }
 
 /* Legacy viewer shell retained in history; the functional viewer lives in ViewerPage.tsx.

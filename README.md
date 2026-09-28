@@ -1,10 +1,10 @@
 # Alkami Prototypes
 
-Alkami Prototypes is a shared internal review space for hosted prototypes. Teams can sign in with Alkami Slack, discover prototypes built by teammates, open a prototype in a controlled viewer, leave viewport-aware pins, discuss them in threads, and notify the owner in Slack.
+Alkami Prototypes is a shared internal review space for hosted prototypes. Teams can sign in with an Alkami email magic link, discover prototypes built by teammates, open a prototype in a controlled viewer, leave viewport-aware pins, and discuss them in threads. Slack identity and notifications remain optional for a future integration.
 
 ## Local setup
 
-Requirements: Node.js 22+, a Supabase project, and a Slack app configured for Slack OIDC.
+Requirements: Node.js 22+ and a Supabase project.
 
 ```sh
 cp .env.example .env
@@ -17,23 +17,25 @@ Set the public browser values in `.env`:
 ```sh
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 VITE_SUPABASE_ANON_KEY=<supabase-anon-key>
+VITE_ALLOWED_EMAIL_DOMAIN=alkami.com
+VITE_SLACK_NOTIFICATIONS_ENABLED=false
 ```
 
 Open `http://127.0.0.1:5173/#/signin` after starting Vite. Restart Vite after changing environment values.
 
-## Supabase and Slack setup
+## Supabase and access setup
 
-1. In Supabase Auth, enable the `slack_oidc` provider and configure its Slack client credentials. Add the Supabase Auth callback URL shown by the project to the Slack app.
-2. Apply the migrations with `supabase db push`.
-3. Create a Supabase Vault secret named `ALLOWED_SLACK_TEAM_ID` containing the Alkami Slack team ID. The auth trigger fails closed when it is missing or does not match the Slack identity claim.
-4. Configure these Supabase Edge Function secrets:
+1. In Supabase Auth, keep Email enabled for Magic Links and add the local/public app URL to the allowed redirect URLs.
+2. Apply the migrations with `supabase db push`, including `20260928170000_email_auth.sql`. The auth trigger fails closed when the email domain does not match the configured Alkami domain.
+3. The migration defaults to `alkami.com`. If the company domain ever changes, update the `ALLOWED_EMAIL_DOMAIN` Supabase Vault secret used by the database trigger and the matching Edge Function secret. The browser-side `VITE_ALLOWED_EMAIL_DOMAIN` is only a UX convenience; the database trigger is the security boundary.
+4. Slack is intentionally optional. When approval is available later, configure these Edge Function secrets and set `VITE_SLACK_NOTIFICATIONS_ENABLED=true`:
 
-   - `ALLOWED_SLACK_TEAM_ID`
+   - `ALLOWED_EMAIL_DOMAIN`
    - `APP_ORIGIN` — the origin allowed by `check-embed` for frame ancestor checks
    - `APP_URL` — the public app URL used in Slack deep links
    - `SLACK_BOT_TOKEN`
 
-   The Slack bot needs permission to list users/channels, post messages, reply in threads, and add the `white_check_mark` reaction. Test only in the Slack test channel selected for this project.
+   The Slack bot needs permission to list users/channels, post messages, reply in threads, and add the `white_check_mark` reaction. Slack-specific profile fields and prototype channel fields remain nullable so Slack can be added later without changing comment ownership.
 
 ## Deploying to GitLab Pages
 

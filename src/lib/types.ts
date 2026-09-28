@@ -5,10 +5,11 @@ export type PrototypeSummary = {
   name: string;
   url: string;
   description: string | null;
-  owner_slack_id: string;
+  owner_id: string | null;
+  owner_slack_id: string | null;
   owner_name: string;
-  slack_channel_id: string;
-  slack_channel_name: string;
+  slack_channel_id: string | null;
+  slack_channel_name: string | null;
   embed_mode: EmbedMode;
   embed_reason: string | null;
   favicon_url: string | null;

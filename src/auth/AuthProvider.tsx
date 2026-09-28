@@ -4,12 +4,14 @@ import type { Session, User } from "@supabase/supabase-js";
 
 import { isDemoMode } from "@/lib/demoMode";
 import { demoProfile } from "@/lib/demoStore";
+import { allowedEmailDomain, isAllowedEmail } from "@/lib/authConfig";
 import { supabase, supabaseConfigured } from "@/lib/supabase";
 
 export type Profile = {
   id: string;
-  slack_user_id: string;
-  team_id: string;
+  slack_user_id: string | null;
+  team_id: string | null;
+  auth_provider: "email" | "slack";
   name: string;
   avatar_url: string | null;
   email: string | null;
@@ -22,7 +24,7 @@ type AuthContextValue = {
   profile: Profile | null;
   status: AuthStatus;
   error: string | null;
-  signInWithSlack: () => Promise<void>;
+  signInWithEmail: (email: string) => Promise<boolean>;
   signOut: () => Promise<void>;
 };
 
@@ -58,7 +60,7 @@ export function getSlackClaims(user: User) {
 
 function friendlyAuthError(error: unknown) {
   if (error instanceof Error && error.message) return error.message;
-  return "We could not complete Slack sign-in. Please try again.";
+  return "We could not send the sign-in link. Please try again.";
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -84,17 +86,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data, error: profileError } = await supabase
       .from("profiles")
-      .select("id, slack_user_id, team_id, name, avatar_url, email")
+      .select("id, slack_user_id, team_id, auth_provider, name, avatar_url, email")
       .eq("id", session.user.id)
       .maybeSingle();
 
     if (profileError || !data) {
-      // The profile trigger rejects users outside the configured Alkami Slack workspace.
+      // The profile trigger rejects users outside the configured Alkami email domain.
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
       setStatus("rejected");
-      setError("Only Alkami Slack members can use this.");
+      setError(`Only ${allowedEmailDomain} email addresses can use this.`);
       return;
     }
 
@@ -126,26 +128,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [hydrateSession]);
 
-  const signInWithSlack = useCallback(async () => {
+  const signInWithEmail = useCallback(async (email: string) => {
     if (isDemoMode) {
       setUser(demoUser);
       setProfile(demoProfile);
       setStatus("signed_in");
-      return;
+      return true;
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!isAllowedEmail(normalizedEmail)) {
+      setError(`Use your ${allowedEmailDomain} email address.`);
+      return false;
     }
     if (!supabase) {
       setError("Add the Supabase URL and anon key before signing in.");
-      return;
+      return false;
     }
 
     setError(null);
     const redirectTo = `${window.location.origin}${window.location.pathname}`;
-    const { error: signInError } = await supabase.auth.signInWithOAuth({
-      provider: "slack_oidc",
-      options: { redirectTo },
+    const { error: signInError } = await supabase.auth.signInWithOtp({
+      email: normalizedEmail,
+      options: { shouldCreateUser: true, emailRedirectTo: redirectTo },
     });
 
-    if (signInError) setError(friendlyAuthError(signInError));
+    if (signInError) {
+      setError(friendlyAuthError(signInError));
+      return false;
+    }
+    return true;
   }, []);
 
   const signOut = useCallback(async () => {
@@ -158,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (signOutError) setError(friendlyAuthError(signOutError));
   }, [clearSession]);
 
-  const value = useMemo(() => ({ user, profile, status, error, signInWithSlack, signOut }), [error, profile, signInWithSlack, signOut, status, user]);
+  const value = useMemo(() => ({ user, profile, status, error, signInWithEmail, signOut }), [error, profile, signInWithEmail, signOut, status, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

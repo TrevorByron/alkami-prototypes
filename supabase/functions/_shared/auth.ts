@@ -13,9 +13,9 @@ export async function requireAlkamiMember(request: Request): Promise<AuthContext
   const token = authorization?.replace(/^Bearer\s+/i, "");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const allowedTeamId = Deno.env.get("ALLOWED_SLACK_TEAM_ID");
+  const allowedEmailDomain = (Deno.env.get("ALLOWED_EMAIL_DOMAIN") ?? "alkami.com").replace(/^@/, "").trim().toLowerCase();
 
-  if (!token || !supabaseUrl || !serviceRoleKey || !allowedTeamId) {
+  if (!token || !supabaseUrl || !serviceRoleKey) {
     return json({ error: "Unauthorized" }, 401);
   }
 
@@ -23,8 +23,9 @@ export async function requireAlkamiMember(request: Request): Promise<AuthContext
   const { data: { user }, error: userError } = await admin.auth.getUser(token);
   if (userError || !user) return json({ error: "Unauthorized" }, 401);
 
-  const { data: profile, error: profileError } = await admin.from("profiles").select("team_id").eq("id", user.id).maybeSingle();
-  if (profileError || !profile || profile.team_id !== allowedTeamId) return json({ error: "Only Alkami Slack members can use this." }, 403);
+  const { data: profile, error: profileError } = await admin.from("profiles").select("email, is_active").eq("id", user.id).maybeSingle();
+  const email = (profile?.email ?? user.email ?? "").trim().toLowerCase();
+  if (profileError || !profile || profile.is_active === false || !email.endsWith(`@${allowedEmailDomain}`)) return json({ error: `Only ${allowedEmailDomain} members can use this.` }, 403);
 
   return { admin, user };
 }

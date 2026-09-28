@@ -46,9 +46,11 @@ Deno.serve(async (request) => {
         target.resolved_by ? auth.admin.from("profiles").select("name").eq("id", target.resolved_by).maybeSingle() : Promise.resolve({ data: null }),
       ]);
       if (!prototype || !author) return json({ error: "Notification data is incomplete" }, 422);
+      if (!prototype.slack_channel_id) return json({ error: "Slack is not connected for this prototype." }, 409);
       const link = deepLink(prototype.id, target.id);
+      const ownerMention = prototype.owner_slack_id ? `<@${prototype.owner_slack_id}>` : "Prototype owner";
       if (body.type === "comment") {
-        const result = await slackApi(token, "chat.postMessage", { channel: prototype.slack_channel_id, text: `<@${prototype.owner_slack_id}> — ${author.name} commented on *${prototype.name}* · ${target.screen_label ?? "General comment"}\n${quote(target.body)}\n<${link}|View pin →>` });
+        const result = await slackApi(token, "chat.postMessage", { channel: prototype.slack_channel_id, text: `${ownerMention} — ${author.name} commented on *${prototype.name}* · ${target.screen_label ?? "General comment"}\n${quote(target.body)}\n<${link}|View pin →>` });
         await auth.admin.from("comments").update({ slack_ts: result.ts }).eq("id", target.id);
         return json({ ok: true, ts: result.ts });
       }
@@ -70,9 +72,11 @@ Deno.serve(async (request) => {
       auth.admin.from("profiles").select("name").eq("id", reply.author_id).single(),
     ]);
     if (!parent || !prototype || !author || !replyAuthor) return json({ error: "Reply notification data is incomplete" }, 422);
+    if (!prototype.slack_channel_id) return json({ error: "Slack is not connected for this prototype." }, 409);
     if (!parent.slack_ts) return json({ error: "The parent Slack message has not been created yet." }, 409);
     const link = deepLink(prototype.id, parent.id);
-    const result = await slackApi(token, "chat.postMessage", { channel: prototype.slack_channel_id, thread_ts: parent.slack_ts, text: `<@${author.slack_user_id}> — ${replyAuthor.name} replied on *${prototype.name}*\n${quote(reply.body)}\n<${link}|View thread →>` });
+    const authorMention = author.slack_user_id ? `<@${author.slack_user_id}>` : "Prototype author";
+    const result = await slackApi(token, "chat.postMessage", { channel: prototype.slack_channel_id, thread_ts: parent.slack_ts, text: `${authorMention} — ${replyAuthor.name} replied on *${prototype.name}*\n${quote(reply.body)}\n<${link}|View thread →>` });
     await auth.admin.from("replies").update({ slack_ts: result.ts }).eq("id", reply.id);
     return json({ ok: true, ts: result.ts });
   } catch (error) {

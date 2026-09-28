@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 export type SlackNotificationType = "comment" | "reply" | "resolved" | "reopened";
 
 export async function notifySlack(type: SlackNotificationType, id: string) {
+  if (import.meta.env.VITE_SLACK_NOTIFICATIONS_ENABLED !== "true") return;
   if (isDemoMode) return;
   if (!supabase) return;
   const { error } = await supabase.functions.invoke("notify-slack", { body: { type, id } });

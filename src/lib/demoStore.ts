@@ -4,12 +4,13 @@ const prototypesKey = "commentor:demo:prototypes";
 const commentsKey = "commentor:demo:comments";
 const repliesKey = "commentor:demo:replies";
 
-export const demoProfile: CommentAuthor & { slack_user_id: string; team_id: string; email: string } = {
+export const demoProfile: CommentAuthor & { slack_user_id: string; team_id: string; auth_provider: "email"; email: string } = {
   id: "demo-user",
   slack_user_id: "demo-user",
   name: "Demo reviewer",
   avatar_url: null,
   team_id: "demo-team",
+  auth_provider: "email",
   email: "demo@example.test",
 };
 
@@ -42,7 +43,7 @@ export function getDemoPrototype(id: string) {
   return listDemoPrototypes().find((prototype) => prototype.id === id) ?? null;
 }
 
-export function createDemoPrototype(input: { name: string; url: string; description: string | null; owner_slack_id: string; owner_name: string; slack_channel_id: string; slack_channel_name: string; embed_mode: "live" | "new_tab"; embed_reason: string; favicon_url: string | null; }) {
+export function createDemoPrototype(input: { name: string; url: string; description: string | null; owner_id: string; owner_slack_id: string | null; owner_name: string; slack_channel_id: string | null; slack_channel_name: string | null; embed_mode: "live" | "new_tab"; embed_reason: string; favicon_url: string | null; }) {
   const timestamp = now();
   const prototype: PrototypeSummary = { id: crypto.randomUUID(), ...input, created_by: demoProfile.id, created_at: timestamp, updated_at: timestamp, open_comment_count: 0 };
   write(prototypesKey, [...read<PrototypeSummary>(prototypesKey), prototype]);

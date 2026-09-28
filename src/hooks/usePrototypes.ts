@@ -24,7 +24,7 @@ export function usePrototype(id: string | undefined) {
       return;
     }
     setLoading(true);
-    const { data, error: queryError } = await supabase.from("prototypes").select("id, name, url, description, owner_slack_id, owner_name, slack_channel_id, slack_channel_name, embed_mode, embed_reason, favicon_url, created_by, created_at, updated_at").eq("id", id).maybeSingle();
+    const { data, error: queryError } = await supabase.from("prototypes").select("id, name, url, description, owner_id, owner_slack_id, owner_name, slack_channel_id, slack_channel_name, embed_mode, embed_reason, favicon_url, created_by, created_at, updated_at").eq("id", id).maybeSingle();
     if (queryError || !data) {
       setError(queryError?.message ?? "Prototype not found.");
       setLoading(false);
@@ -63,7 +63,7 @@ export function usePrototypes() {
     const [prototypeResult, commentsResult] = await Promise.all([
       supabase
         .from("prototypes")
-        .select("id, name, url, description, owner_slack_id, owner_name, slack_channel_id, slack_channel_name, embed_mode, embed_reason, favicon_url, created_by, created_at, updated_at")
+        .select("id, name, url, description, owner_id, owner_slack_id, owner_name, slack_channel_id, slack_channel_name, embed_mode, embed_reason, favicon_url, created_by, created_at, updated_at")
         .order("updated_at", { ascending: false }),
       supabase.from("comments").select("prototype_id").eq("status", "open"),
     ]);
