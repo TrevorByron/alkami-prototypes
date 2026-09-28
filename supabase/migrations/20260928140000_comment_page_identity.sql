@@ -1,6 +1,6 @@
 -- Scope each comment to the route that was visible when it was created.
--- This is nullable for backwards compatibility; legacy comments are treated
--- as belonging to the prototype's starting URL by the client.
+-- Nullable is reserved for general comments. Legacy comments are backfilled
+-- to the prototype's starting URL in the follow-up migration.
 
 alter table public.comments add column if not exists page_url text;
 
