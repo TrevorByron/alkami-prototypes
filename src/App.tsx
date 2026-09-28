@@ -4,21 +4,19 @@ import { ArrowLeft, ArrowUpRight, Check, ChevronDown, CircleHelp, ExternalLink, 
 
 import { useAuth } from "@/auth/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AddPrototypeDialog } from "@/components/AddPrototypeDialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { usePrototypes } from "@/hooks/usePrototypes";
+import type { PrototypeSummary } from "@/lib/types";
 import { SignIn } from "@/pages/SignIn";
 
 type Theme = "light" | "dark";
-
-const prototypes = [
-  { name: "Treasury dashboard", host: "treasury-preview.vercel.app", owner: "Maya Chen", initials: "MC", comments: 8, updated: "12 min ago", accent: "from-indigo-500 to-violet-500" },
-  { name: "Business banking onboarding", host: "onboarding-prototype.netlify.app", owner: "Jordan Lee", initials: "JL", comments: 3, updated: "Yesterday", accent: "from-cyan-500 to-blue-500" },
-  { name: "Account insights", host: "account-insights.pages.dev", owner: "Sam Rivera", initials: "SR", comments: 0, updated: "3 days ago", accent: "from-amber-400 to-orange-500", newTab: true },
-];
 
 function App() {
   const [theme, setTheme] = useState<Theme>("light");
@@ -69,7 +67,9 @@ function TopBar({ theme, onToggleTheme, viewer = false }: { theme: Theme; onTogg
 
 function Library({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
   const [query, setQuery] = useState("");
-  const visible = prototypes.filter((prototype) => `${prototype.name} ${prototype.host} ${prototype.owner}`.toLowerCase().includes(query.toLowerCase()));
+  const [addOpen, setAddOpen] = useState(false);
+  const { prototypes, loading, error, refresh } = usePrototypes();
+  const visible = prototypes.filter((prototype) => `${prototype.name} ${prototype.url} ${prototype.owner_name}`.toLowerCase().includes(query.toLowerCase()));
 
   return (
     <div className="min-h-screen bg-background">
@@ -81,7 +81,7 @@ function Library({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => 
             <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Your prototypes</h1>
             <p className="mt-2 max-w-lg text-muted-foreground">A calm place to review early ideas, leave precise feedback, and keep conversations moving.</p>
           </div>
-          <Button size="lg" className="shrink-0"><Plus className="h-4 w-4" />Add prototype</Button>
+          <Button size="lg" className="shrink-0" onClick={() => setAddOpen(true)}><Plus className="h-4 w-4" />Add prototype</Button>
         </section>
 
         <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -92,32 +92,35 @@ function Library({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => 
           <span className="text-sm text-muted-foreground">{visible.length} of {prototypes.length} prototypes</span>
         </div>
 
-        {visible.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{visible.map((prototype) => <PrototypeCard key={prototype.name} prototype={prototype} />)}</div> : <EmptySearch />}
+        {loading ? <SkeletonGrid /> : error ? <LibraryError message={error} onRetry={() => void refresh()} /> : visible.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{visible.map((prototype) => <PrototypeCard key={prototype.id} prototype={prototype} />)}</div> : query ? <EmptySearch /> : <EmptyLibrary onAdd={() => setAddOpen(true)} />}
       </main>
+      <AddPrototypeDialog open={addOpen} onOpenChange={setAddOpen} onCreated={() => void refresh()} />
     </div>
   );
 }
 
-function PrototypeCard({ prototype }: { prototype: (typeof prototypes)[number] }) {
+function PrototypeCard({ prototype }: { prototype: PrototypeSummary }) {
+  const host = (() => { try { return new URL(prototype.url).host; } catch { return prototype.url; } })();
+  const initials = prototype.owner_name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   return (
-    <Link to="/p/treasury-dashboard" className="group block">
+    <Link to={`/p/${prototype.id}`} className="group block">
       <Card className="overflow-hidden transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-xl group-hover:shadow-indigo-100/40 dark:group-hover:shadow-black/20">
-        <div className={`h-2 bg-gradient-to-r ${prototype.accent}`} />
+        <div className="h-2 bg-gradient-to-r from-indigo-500 to-violet-500" />
         <CardHeader className="pb-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-muted text-sm font-semibold">{prototype.host.slice(0, 1).toUpperCase()}</div>
-              <div className="min-w-0"><CardTitle className="truncate text-base">{prototype.name}</CardTitle><CardDescription className="mt-1 truncate">{prototype.host}</CardDescription></div>
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-muted text-sm font-semibold">{prototype.favicon_url ? <img src={prototype.favicon_url} alt="" className="h-5 w-5" /> : host.slice(0, 1).toUpperCase()}</div>
+              <div className="min-w-0"><CardTitle className="truncate text-base">{prototype.name}</CardTitle><CardDescription className="mt-1 truncate">{host}</CardDescription></div>
             </div>
             <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </div>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between border-t pt-4 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground"><Avatar className="h-7 w-7"><AvatarFallback className="bg-secondary text-[10px]">{prototype.initials}</AvatarFallback></Avatar><span>{prototype.owner}</span></div>
-            <div className="flex items-center gap-2"><Badge variant={prototype.comments ? "default" : "muted"} className="gap-1"><MessageSquare className="h-3 w-3" />{prototype.comments}</Badge>{prototype.newTab && <Badge variant="outline">New tab only</Badge>}</div>
+            <div className="flex min-w-0 items-center gap-2 text-muted-foreground"><Avatar className="h-7 w-7"><AvatarFallback className="bg-secondary text-[10px]">{initials}</AvatarFallback></Avatar><span className="truncate">{prototype.owner_name}</span></div>
+            <div className="flex shrink-0 items-center gap-2"><Badge variant={prototype.open_comment_count ? "default" : "muted"} className="gap-1"><MessageSquare className="h-3 w-3" />{prototype.open_comment_count}</Badge>{prototype.embed_mode === "new_tab" && <Badge variant="outline">New tab only</Badge>}</div>
           </div>
-          <p className="mt-4 text-xs text-muted-foreground">Updated {prototype.updated}</p>
+          <p className="mt-4 text-xs text-muted-foreground">Updated {formatRelativeTime(prototype.updated_at)}</p>
         </CardContent>
       </Card>
     </Link>
@@ -126,6 +129,28 @@ function PrototypeCard({ prototype }: { prototype: (typeof prototypes)[number] }
 
 function EmptySearch() {
   return <Card className="border-dashed"><CardContent className="flex min-h-64 flex-col items-center justify-center text-center"><div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-muted"><Search className="h-5 w-5 text-muted-foreground" /></div><h2 className="font-medium">No prototypes found</h2><p className="mt-1 text-sm text-muted-foreground">Try a different search term.</p></CardContent></Card>;
+}
+
+function EmptyLibrary({ onAdd }: { onAdd: () => void }) {
+  return <Card className="border-dashed"><CardContent className="flex min-h-72 flex-col items-center justify-center text-center"><div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300"><Sparkles className="h-5 w-5" /></div><h2 className="font-medium">Your review library is empty</h2><p className="mt-1 max-w-sm text-sm text-muted-foreground">Add a hosted prototype to give your team a shared place for focused feedback.</p><Button className="mt-5" onClick={onAdd}><Plus className="h-4 w-4" />Add your first prototype</Button></CardContent></Card>;
+}
+
+function SkeletonGrid() {
+  return <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{[1, 2, 3].map((item) => <Card key={item} className="overflow-hidden"><Skeleton className="h-2 rounded-none" /><CardHeader><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-xl" /><div className="space-y-2"><Skeleton className="h-4 w-36" /><Skeleton className="h-3 w-48" /></div></div></CardHeader><CardContent><Skeleton className="h-9 w-full" /><Skeleton className="mt-4 h-3 w-24" /></CardContent></Card>)}</div>;
+}
+
+function LibraryError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return <Card className="border-dashed"><CardContent className="flex min-h-64 flex-col items-center justify-center text-center"><h2 className="font-medium">We couldn’t load your prototypes</h2><p className="mt-1 max-w-md text-sm text-muted-foreground">{message}</p><Button variant="outline" className="mt-5" onClick={onRetry}>Try again</Button></CardContent></Card>;
+}
+
+function formatRelativeTime(value: string) {
+  const age = Date.now() - new Date(value).getTime();
+  const minutes = Math.max(1, Math.round(age / 60000));
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} hr${hours === 1 ? "" : "s"} ago`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
 function Viewer({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
