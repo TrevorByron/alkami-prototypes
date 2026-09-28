@@ -65,13 +65,52 @@ The `deploy-functions` job is manual and deploys `check-embed`, `slack-directory
 - The iframe sandbox intentionally does not allow top-level navigation.
 - Cross-origin SPAs cannot be inspected by the parent page because of browser security. To report client-side route changes, scroll, and the element under review, add this small bridge to the embedded prototype:
 
+  Add `data-commentor-id="unique-name"` to important review targets when possible; those stable identifiers are preferred over generated tag paths.
+
   ```js
+  const selectorFor = (element) => {
+    if (!element) return null;
+    element = element.closest("[data-commentor-id]") || element;
+    if (element.dataset.commentorId) return `[data-commentor-id="${CSS.escape(element.dataset.commentorId)}"]`;
+    if (element.id) return `#${CSS.escape(element.id)}`;
+    return element.tagName.toLowerCase();
+  };
+
   const reportCommentorContext = (selector = null) => window.parent.postMessage({
     type: "commentor:context",
     url: window.location.href,
     scrollY: window.scrollY,
     selector,
   }, "*");
+
+  ["pushState", "replaceState"].forEach((method) => {
+    const original = history[method];
+    history[method] = function (...args) {
+      const result = original.apply(this, args);
+      reportCommentorContext();
+      return result;
+    };
+  });
+
+  window.addEventListener("message", (event) => {
+    const message = event.data;
+    if (message?.type === "commentor:inspect") {
+      const element = document.elementFromPoint(message.x, message.y);
+      event.source?.postMessage({
+        type: "commentor:inspection",
+        requestId: message.requestId,
+        url: window.location.href,
+        scrollY: window.scrollY,
+        selector: selectorFor(element),
+      }, event.origin || "*");
+    }
+    if (message?.type === "commentor:restore") {
+      const element = message.selector ? document.querySelector(message.selector) : null;
+      if (element) element.scrollIntoView({ block: "center", behavior: "auto" });
+      else window.scrollTo({ top: message.scrollY ?? 0, behavior: "auto" });
+      reportCommentorContext(message.selector ?? null);
+    }
+  });
 
   window.addEventListener("scroll", () => reportCommentorContext(), { passive: true });
   window.addEventListener("popstate", () => reportCommentorContext());

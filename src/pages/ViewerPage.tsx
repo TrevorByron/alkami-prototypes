@@ -63,6 +63,7 @@ export function ViewerPage({ theme, onToggleTheme }: { theme: Theme; onToggleThe
   const stageRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const pageUrlRef = useRef<string | null>(null);
+  const pendingInspectionRef = useRef<string | null>(null);
   const [stageWidth, setStageWidth] = useState(1200);
 
   useEffect(() => {
@@ -129,6 +130,15 @@ export function ViewerPage({ theme, onToggleTheme }: { theme: Theme; onToggleThe
           scrollY: typeof event.data.scrollY === "number" ? event.data.scrollY : 0,
           selector: typeof event.data.selector === "string" ? event.data.selector : null,
         });
+      }
+      if (event.data?.type === "commentor:inspection" && event.data.requestId === pendingInspectionRef.current) {
+        const context = {
+          scrollY: typeof event.data.scrollY === "number" ? event.data.scrollY : 0,
+          selector: typeof event.data.selector === "string" ? event.data.selector : null,
+        };
+        setFrameContext(context);
+        setComposer((current) => current ? { ...current, context } : current);
+        pendingInspectionRef.current = null;
       }
     };
     window.addEventListener("message", handleNavigationMessage);
@@ -205,11 +215,16 @@ export function ViewerPage({ theme, onToggleTheme }: { theme: Theme; onToggleThe
       const frameRect = frame?.getBoundingClientRect();
       const frameDocument = frame?.contentDocument;
       const frameWindow = frame?.contentWindow;
-      if (frame && frameRect && frameDocument && frameWindow) {
+      if (frame && frameRect && frameWindow) {
         const x = (event.clientX - frameRect.left) * (frame.clientWidth / frameRect.width);
         const y = (event.clientY - frameRect.top) * (frame.clientHeight / frameRect.height);
-        const element = frameDocument.elementFromPoint(x, y);
-        context = { scrollY: frameWindow.scrollY, selector: element ? cssSelector(element) : null };
+        if (frameDocument) {
+          const element = frameDocument.elementFromPoint(x, y);
+          context = { scrollY: frameWindow.scrollY, selector: element ? cssSelector(element) : null };
+        }
+        const requestId = crypto.randomUUID();
+        pendingInspectionRef.current = requestId;
+        frameWindow.postMessage({ type: "commentor:inspect", requestId, x, y }, "*");
       }
     } catch {
       // Cross-origin prototypes can provide this context through postMessage.
@@ -300,6 +315,11 @@ function cssSelector(element: Element) {
   const parts: string[] = [];
   let current: Element | null = element;
   while (current && current.nodeType === Node.ELEMENT_NODE && parts.length < 8) {
+    const stableId = current instanceof HTMLElement ? current.dataset.commentorId : null;
+    if (stableId) {
+      parts.unshift(`[data-commentor-id="${CSS.escape(stableId)}"]`);
+      break;
+    }
     if (current.id) {
       parts.unshift(`#${CSS.escape(current.id)}`);
       break;
