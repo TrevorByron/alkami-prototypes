@@ -52,7 +52,8 @@ The `deploy-functions` job is manual and deploys `check-embed`, `slack-directory
 
 - Add a URL and blur the field to run `check-embed`.
 - `example.com` should be eligible for a live frame; sites that reject framing, such as GitHub, are marked new-tab-only.
-- In the viewer, choose a device width, switch to Comment mode, and click the frame to place a pin.
+- In the viewer, choose a device width, choose `Pin comment` in the comments panel, and click the frame to place a pin.
+- The comments panel is visible by default with an open general-feedback composer. Choose `Pin comment` in that panel only when feedback should target a specific spot in the frame; Browse remains the default interaction mode.
 - Comments are scoped to the prototype route that was visible when they were created. The viewer saves the route, scroll position, and (when same-origin access or the bridge below is available) a CSS selector for the clicked element. Switching routes clears the current page's pins and thread list; opening a thread restores its route and scroll context.
 - General comments can be posted from the persistent comments panel or the floating action. They have no route, pin, scroll position, or element selector and remain visible across the prototype.
 - `?comment=<comment-id>` selects the thread, switches to its saved viewport, and pulses the pin.
