@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Moon, ShieldCheck, Sparkles, Sun } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -8,10 +9,15 @@ import { Separator } from "@/components/ui/separator";
 import { supabaseConfigured } from "@/lib/supabase";
 
 export function SignIn({ theme, onToggleTheme }: { theme: "light" | "dark"; onToggleTheme: () => void }) {
+  const navigate = useNavigate();
   const { status, error, signInWithSlack } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
   const isRejected = status === "rejected";
   const setupMessage = "This workspace is not connected to Supabase yet.";
+
+  useEffect(() => {
+    if (status === "signed_in") navigate("/", { replace: true });
+  }, [navigate, status]);
 
   async function handleSignIn() {
     setSigningIn(true);
