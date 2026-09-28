@@ -67,6 +67,7 @@ export type CommentRecord = {
   prototype_id: string;
   author_id: string;
   body: string;
+  page_url: string | null;
   status: "open" | "resolved";
   screen_label: string | null;
   viewport: Viewport | null;
