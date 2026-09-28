@@ -20,6 +20,7 @@ deploy-functions:
   script:
     - npx supabase functions deploy check-embed --project-ref "$SUPABASE_PROJECT_REF"
     - npx supabase functions deploy slack-directory --project-ref "$SUPABASE_PROJECT_REF"
+    - npx supabase functions deploy notify-slack --project-ref "$SUPABASE_PROJECT_REF"
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       when: manual

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { useCommentThreads } from "@/hooks/useCommentThreads";
 import { usePrototype } from "@/hooks/usePrototypes";
+import { notifySlack } from "@/lib/notifySlack";
 import { supabase } from "@/lib/supabase";
 import type { CommentRecord, Viewport } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -101,11 +102,11 @@ export function ViewerPage({ theme, onToggleTheme }: { theme: Theme; onToggleThe
   const saveComment = async () => {
     if (!supabase || !user || !prototypeId || !body.trim()) return;
     setSaving(true);
-    const { error: insertError } = await supabase.from("comments").insert({ prototype_id: prototypeId, author_id: user.id, body: body.trim(), screen_label: screenLabel.trim() || null, viewport, x_pct: composer?.xPct ?? null, y_pct: composer?.yPct ?? null, scroll_y: 0 });
+    const { data: inserted, error: insertError } = await supabase.from("comments").insert({ prototype_id: prototypeId, author_id: user.id, body: body.trim(), screen_label: screenLabel.trim() || null, viewport, x_pct: composer?.xPct ?? null, y_pct: composer?.yPct ?? null, scroll_y: 0 }).select("id").single();
     setSaving(false);
     if (insertError) { toast.error(insertError.message); return; }
     if (screenLabel.trim()) window.localStorage.setItem("commentor:last-screen-label", screenLabel.trim());
-    setComposer(null); setBody(""); toast.success("Comment added"); await refresh();
+    setComposer(null); setBody(""); toast.success("Comment added"); await refresh(); if (inserted?.id) void notifySlack("comment", inserted.id);
   };
 
   if (loading) return <ViewerLoading theme={theme} onToggleTheme={onToggleTheme} />;
@@ -139,9 +140,9 @@ function ThreadDetail({ comment, onRefresh }: { comment: CommentRecord; onRefres
 
   async function addReply() {
     if (!supabase || !user || !reply.trim()) return;
-    setPending(true); const { error } = await supabase.from("replies").insert({ comment_id: comment.id, author_id: user.id, body: reply.trim() }); setPending(false);
+    setPending(true); const { data: inserted, error } = await supabase.from("replies").insert({ comment_id: comment.id, author_id: user.id, body: reply.trim() }).select("id").single(); setPending(false);
     if (error) { toast.error(error.message); return; }
-    setReply(""); toast.success("Reply added"); await onRefresh();
+    setReply(""); toast.success("Reply added"); await onRefresh(); if (inserted?.id) void notifySlack("reply", inserted.id);
   }
 
   async function updateStatus(status: "open" | "resolved") {
@@ -150,7 +151,7 @@ function ThreadDetail({ comment, onRefresh }: { comment: CommentRecord; onRefres
     const values = status === "resolved" ? { status, resolved_by: user.id, resolved_at: new Date().toISOString(), resolution_note: note.trim() || null } : { status, resolved_by: null, resolved_at: null, resolution_note: null };
     const { error } = await supabase.from("comments").update(values).eq("id", comment.id); setPending(false);
     if (error) { toast.error(error.message); return; }
-    setNote(""); toast.success(status === "resolved" ? "Thread resolved" : "Thread reopened"); await onRefresh();
+    setNote(""); toast.success(status === "resolved" ? "Thread resolved" : "Thread reopened"); await onRefresh(); void notifySlack(status === "resolved" ? "resolved" : "reopened", comment.id);
   }
 
   return <div className="mt-5 border-t pt-5"><div className="mb-3 flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Thread</p><Badge variant={comment.status === "open" ? "default" : "muted"}>{comment.status}</Badge></div><div className="rounded-lg bg-muted/50 p-3"><p className="text-sm leading-6">{comment.body}</p><p className="mt-2 text-xs text-muted-foreground">{comment.screen_label ?? "General comment"} · {timeAgo(comment.created_at)}</p></div><div className="mt-4 space-y-3">{comment.replies.map((item) => <div key={item.id} className="flex gap-2.5"><Avatar className="h-7 w-7 shrink-0"><AvatarFallback className="bg-secondary text-[10px]">{initials(item.author?.name ?? "Member")}</AvatarFallback></Avatar><div className="min-w-0 flex-1 rounded-lg border px-3 py-2"><div className="flex justify-between gap-2"><span className="text-xs font-medium">{item.author?.name ?? "Member"}</span><span className="text-[10px] text-muted-foreground">{timeAgo(item.created_at)}</span></div><p className="mt-1 text-sm leading-5">{item.body}</p></div></div>)}</div><div className="mt-4 space-y-2"><Textarea value={reply} onChange={(event) => setReply(event.target.value)} placeholder="Write a reply…" rows={3} /><Button className="w-full" size="sm" disabled={!reply.trim() || pending} onClick={() => void addReply()}><Send className="h-3.5 w-3.5" />Reply</Button></div><div className="mt-4 space-y-2">{canResolve ? <Textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="What changed? (optional)" rows={2} /> : null}<Button variant={canResolve ? "secondary" : "outline"} className="w-full" size="sm" disabled={pending} onClick={() => void updateStatus(canResolve ? "resolved" : "open")}>{pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : canResolve ? <Check className="h-3.5 w-3.5" /> : <RotateCcw className="h-3.5 w-3.5" />}{canResolve ? "Resolve thread" : "Reopen thread"}</Button></div></div>;
