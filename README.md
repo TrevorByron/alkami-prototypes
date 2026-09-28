@@ -1,6 +1,6 @@
-# Commentor
+# Alkami Prototypes
 
-Commentor is a small internal review space for hosted prototypes. Teams can sign in with Alkami Slack, open a prototype in a controlled viewer, leave viewport-aware pins, discuss them in threads, and notify the owner in Slack.
+Alkami Prototypes is a shared internal review space for hosted prototypes. Teams can sign in with Alkami Slack, discover prototypes built by teammates, open a prototype in a controlled viewer, leave viewport-aware pins, discuss them in threads, and notify the owner in Slack.
 
 ## Local setup
 

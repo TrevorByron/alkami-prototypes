@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, Route, Routes, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowUpRight, CircleHelp, LayoutGrid, MessageSquare, Moon, Plus, Search, Sparkles, Sun } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, CircleHelp, LayoutGrid, Loader2, MessageSquare, Moon, Plus, Search, Sparkles, Sun, Trash2, Users } from "lucide-react";
+import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -9,6 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -52,9 +54,9 @@ function TopBar({ theme, onToggleTheme, viewer = false }: { theme: Theme; onTogg
         {viewer ? <Button aria-label="Back to library" variant="ghost" size="icon" onClick={() => navigate("/")}><ArrowLeft className="h-4 w-4" /></Button> : null}
         <Link to="/" className="group flex items-center gap-3">
           <AppMark />
-          <span className="text-[15px] font-semibold tracking-tight">commentor</span>
+          <span className="text-[15px] font-semibold tracking-tight">Alkami Prototypes</span>
         </Link>
-        {!viewer && <><Separator className="mx-2 h-5 w-px" /><span className="text-sm text-muted-foreground">Prototype library</span></>}
+        {!viewer && <><Separator className="mx-2 h-5 w-px" /><span className="text-sm text-muted-foreground">Team prototype library</span></>}
         {viewer && <><Separator className="mx-2 h-5 w-px" /><span className="text-sm text-muted-foreground">Reviewing prototype</span></>}
       </div>
       <div className="flex items-center gap-2">
@@ -72,8 +74,10 @@ function TopBar({ theme, onToggleTheme, viewer = false }: { theme: Theme; onTogg
 function Library({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
   const [query, setQuery] = useState("");
   const [addOpen, setAddOpen] = useState(false);
-  const { prototypes, loading, error, refresh } = usePrototypes();
+  const { prototypes, loading, error, refresh, remove } = usePrototypes();
   const visible = prototypes.filter((prototype) => `${prototype.name} ${prototype.url} ${prototype.owner_name}`.toLowerCase().includes(query.toLowerCase()));
+  const openConversations = openConversationCount(prototypes);
+  const contributors = contributorCount(prototypes);
 
   return (
     <div className="min-h-screen bg-background">
@@ -82,33 +86,54 @@ function Library({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => 
         <section className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
             <div className="mb-4 flex items-center gap-2"><Badge variant="muted" className="gap-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200"><LayoutGrid className="h-3.5 w-3.5" />Workspace</Badge>{isDemoMode ? <Badge variant="outline" className="border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-300">Local demo mode</Badge> : null}</div>
-            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Your prototypes</h1>
-            <p className="mt-2 max-w-lg text-muted-foreground">A calm place to review early ideas, leave precise feedback, and keep conversations moving.</p>
+            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Alkami Prototypes</h1>
+            <p className="mt-2 max-w-xl text-muted-foreground">One shared home for prototypes built across Alkami. Explore what teammates are making, leave feedback, and keep ideas moving together.</p>
           </div>
           <Button size="lg" className="shrink-0" onClick={() => setAddOpen(true)}><Plus className="h-4 w-4" />Add prototype</Button>
         </section>
 
+        <div className="mb-8 grid gap-3 sm:grid-cols-3">
+          <Card className="bg-card/70"><CardContent className="flex items-center gap-3 p-4"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200"><LayoutGrid className="h-4 w-4" /></div><div><p className="text-sm font-medium">Shared library</p><p className="text-xs text-muted-foreground">{prototypes.length} {prototypes.length === 1 ? "prototype" : "prototypes"} from the team</p></div></CardContent></Card>
+          <Card className="bg-card/70"><CardContent className="flex items-center gap-3 p-4"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-200"><MessageSquare className="h-4 w-4" /></div><div><p className="text-sm font-medium">Open conversations</p><p className="text-xs text-muted-foreground">{openConversations} {openConversations === 1 ? "thread" : "threads"} waiting for feedback</p></div></CardContent></Card>
+          <Card className="bg-card/70"><CardContent className="flex items-center gap-3 p-4"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200"><Users className="h-4 w-4" /></div><div><p className="text-sm font-medium">Team contributors</p><p className="text-xs text-muted-foreground">{contributors} {contributors === 1 ? "builder" : "builders"} sharing ideas</p></div></CardContent></Card>
+        </div>
+
         <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full sm:max-w-sm">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search prototypes" className="pl-9" />
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search the shared library" className="pl-9" />
           </div>
           <span className="text-sm text-muted-foreground">{visible.length} of {prototypes.length} prototypes</span>
         </div>
 
-        {loading ? <SkeletonGrid /> : error ? <LibraryError message={error} onRetry={() => void refresh()} /> : visible.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{visible.map((prototype) => <PrototypeCard key={prototype.id} prototype={prototype} />)}</div> : query ? <EmptySearch /> : <EmptyLibrary onAdd={() => setAddOpen(true)} />}
+        {loading ? <SkeletonGrid /> : error ? <LibraryError message={error} onRetry={() => void refresh()} /> : visible.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{visible.map((prototype) => <PrototypeCard key={prototype.id} prototype={prototype} onDelete={remove} />)}</div> : query ? <EmptySearch /> : <EmptyLibrary onAdd={() => setAddOpen(true)} />}
       </main>
       <AddPrototypeDialog open={addOpen} onOpenChange={setAddOpen} onCreated={() => void refresh()} />
     </div>
   );
 }
 
-function PrototypeCard({ prototype }: { prototype: PrototypeSummary }) {
+function PrototypeCard({ prototype, onDelete }: { prototype: PrototypeSummary; onDelete: (id: string) => Promise<string | null> }) {
   const host = (() => { try { return new URL(prototype.url).host; } catch { return prototype.url; } })();
   const initials = prototype.owner_name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    setDeleting(true);
+    const error = await onDelete(prototype.id);
+    setDeleting(false);
+    if (error) {
+      toast.error(error);
+      return;
+    }
+    setDeleteOpen(false);
+    toast.success("Prototype deleted");
+  }
+
   return (
-    <Link to={`/p/${prototype.id}`} className="group block">
-      <Card className="overflow-hidden transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-xl group-hover:shadow-indigo-100/40 dark:group-hover:shadow-black/20">
+    <Card className="relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-xl hover:shadow-indigo-100/40 dark:hover:shadow-black/20">
+      <Link to={`/p/${prototype.id}`} className="group block">
         <div className="h-2 bg-gradient-to-r from-indigo-500 to-violet-500" />
         <div className="relative h-36 overflow-hidden border-b bg-muted">
           {prototype.embed_mode === "live" ? <div className="pointer-events-none absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.3] bg-white"><iframe title={`${prototype.name} preview`} src={prototype.url} loading="lazy" tabIndex={-1} className="h-full w-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads" /></div> : null}
@@ -125,14 +150,22 @@ function PrototypeCard({ prototype }: { prototype: PrototypeSummary }) {
           </div>
         </CardHeader>
         <CardContent>
+          {prototype.description ? <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">{prototype.description}</p> : null}
           <div className="flex items-center justify-between border-t pt-4 text-sm">
-            <div className="flex min-w-0 items-center gap-2 text-muted-foreground"><Avatar className="h-7 w-7"><AvatarFallback className="bg-secondary text-[10px]">{initials}</AvatarFallback></Avatar><span className="truncate">{prototype.owner_name}</span></div>
-            <div className="flex shrink-0 items-center gap-2"><Badge variant={prototype.open_comment_count ? "default" : "muted"} className="gap-1"><MessageSquare className="h-3 w-3" />{prototype.open_comment_count}</Badge>{prototype.embed_mode === "new_tab" && <Badge variant="outline">New tab only</Badge>}</div>
+            <div className="flex min-w-0 items-center gap-2 text-muted-foreground"><Avatar className="h-7 w-7"><AvatarFallback className="bg-secondary text-[10px]">{initials}</AvatarFallback></Avatar><span className="truncate">Built by {prototype.owner_name}</span></div>
+            <div className="flex shrink-0 items-center gap-2"><Badge variant={prototype.open_comment_count ? "default" : "muted"} className="gap-1" aria-label={`${prototype.open_comment_count} open comments`}><MessageSquare className="h-3 w-3" />{prototype.open_comment_count}</Badge>{prototype.embed_mode === "new_tab" && <Badge variant="outline">New tab only</Badge>}</div>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">Updated {formatRelativeTime(prototype.updated_at)}</p>
         </CardContent>
-      </Card>
-    </Link>
+      </Link>
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogTrigger asChild><Button type="button" variant="secondary" size="icon" className="absolute right-4 top-6 z-10 h-8 w-8 border bg-background/90 shadow-sm backdrop-blur hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40" aria-label={`Delete ${prototype.name}`}><Trash2 className="h-3.5 w-3.5" /></Button></DialogTrigger>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Delete this prototype?</DialogTitle><DialogDescription>This will remove <span className="font-medium text-foreground">{prototype.name}</span> from the shared library and delete its comments and replies. This cannot be undone.</DialogDescription></DialogHeader>
+          <DialogFooter><Button type="button" variant="ghost" onClick={() => setDeleteOpen(false)} disabled={deleting}>Cancel</Button><Button type="button" variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-950/40" onClick={() => void handleDelete()} disabled={deleting}>{deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}{deleting ? "Deleting…" : "Delete prototype"}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
   );
 }
 
@@ -160,6 +193,14 @@ function formatRelativeTime(value: string) {
   if (hours < 24) return `${hours} hr${hours === 1 ? "" : "s"} ago`;
   const days = Math.round(hours / 24);
   return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+function openConversationCount(prototypes: PrototypeSummary[]) {
+  return prototypes.reduce((total, prototype) => total + prototype.open_comment_count, 0);
+}
+
+function contributorCount(prototypes: PrototypeSummary[]) {
+  return new Set(prototypes.map((prototype) => prototype.owner_slack_id)).size;
 }
 
 /* Legacy viewer shell retained in history; the functional viewer lives in ViewerPage.tsx.

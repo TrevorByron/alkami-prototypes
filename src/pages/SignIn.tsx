@@ -34,8 +34,8 @@ export function SignIn({ theme, onToggleTheme }: { theme: "light" | "dark"; onTo
       <Card className="relative w-full max-w-md shadow-xl shadow-indigo-100/30 dark:shadow-black/20">
         <CardHeader className="items-center pb-5 text-center">
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-indigo-200/50 dark:shadow-indigo-950"><Sparkles className="h-5 w-5" /></div>
-          <CardTitle className="text-2xl tracking-tight">Welcome to commentor</CardTitle>
-          <CardDescription className="max-w-xs">A shared space for thoughtful feedback on early product ideas.</CardDescription>
+          <CardTitle className="text-2xl tracking-tight">Welcome to Alkami Prototypes</CardTitle>
+          <CardDescription className="max-w-xs">A shared space to explore what teammates are building and leave thoughtful feedback.</CardDescription>
         </CardHeader>
         <CardContent>
           {isRejected ? <div className="mb-5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-950 dark:bg-rose-950/40 dark:text-rose-200">Only Alkami Slack members can use this.</div> : null}

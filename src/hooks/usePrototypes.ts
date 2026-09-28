@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { isDemoMode } from "@/lib/demoMode";
-import { getDemoPrototype, listDemoPrototypes } from "@/lib/demoStore";
+import { deleteDemoPrototype, getDemoPrototype, listDemoPrototypes } from "@/lib/demoStore";
 import { supabase } from "@/lib/supabase";
 import type { PrototypeSummary } from "@/lib/types";
 
@@ -91,5 +91,18 @@ export function usePrototypes() {
     void load();
   }, [load]);
 
-  return { prototypes, loading, error, refresh: load };
+  const remove = useCallback(async (id: string): Promise<string | null> => {
+    if (isDemoMode) {
+      deleteDemoPrototype(id);
+      await load();
+      return null;
+    }
+    if (!supabase || !user) return "You must be signed in to delete a prototype.";
+    const { error: deleteError } = await supabase.from("prototypes").delete().eq("id", id);
+    if (deleteError) return deleteError.message;
+    await load();
+    return null;
+  }, [load, user]);
+
+  return { prototypes, loading, error, refresh: load, remove };
 }

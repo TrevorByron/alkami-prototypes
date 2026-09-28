@@ -49,6 +49,13 @@ export function createDemoPrototype(input: { name: string; url: string; descript
   return prototype;
 }
 
+export function deleteDemoPrototype(id: string) {
+  write(prototypesKey, read<PrototypeSummary>(prototypesKey).filter((prototype) => prototype.id !== id));
+  const commentIds = new Set(read<CommentRecord>(commentsKey).filter((comment) => comment.prototype_id === id).map((comment) => comment.id));
+  write(commentsKey, read<CommentRecord>(commentsKey).filter((comment) => comment.prototype_id !== id));
+  write(repliesKey, read<ReplyRecord>(repliesKey).filter((reply) => !commentIds.has(reply.comment_id)));
+}
+
 function countOpenComments(prototypeId: string) {
   return read<CommentRecord>(commentsKey).filter((comment) => comment.prototype_id === prototypeId && comment.status === "open").length;
 }
