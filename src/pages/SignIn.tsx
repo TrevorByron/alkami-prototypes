@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
-import { Mail, ShieldCheck, Sparkles } from "lucide-react";
+import { Loader2, Mail, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { AppMark } from "@/components/AppMark";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { InfoBanner } from "@/components/ui/info-banner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { supabaseConfigured } from "@/lib/supabase";
 import { allowedEmailDomain } from "@/lib/authConfig";
@@ -38,26 +42,27 @@ export function SignIn() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-6">
-      <div className="dot-grid absolute inset-0 opacity-50" />
-      <Card className="relative w-full max-w-md shadow-xl shadow-indigo-100/30">
-        <CardHeader className="items-center pb-5 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-indigo-200/50"><Sparkles className="h-5 w-5" /></div>
-          <CardTitle className="text-2xl tracking-tight">Welcome to Alkami Prototypes</CardTitle>
-          <CardDescription className="max-w-xs">A shared space to explore what teammates are building and leave thoughtful feedback.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {!supabaseConfigured ? <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{setupMessage}</div> : null}
-          {error ? <div className="mb-5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div> : null}
-          {linkSent ? <div className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">Check your {allowedEmailDomain} inbox for a sign-in link. It expires after a short time and can only be used once.</div> : null}
-          <label className="mb-2 block text-sm font-medium" htmlFor="sign-in-email">Alkami email</label>
-          <input id="sign-in-email" value={email} onChange={(event) => { setEmail(event.target.value); setLinkSent(false); }} placeholder={`you@${allowedEmailDomain}`} type="email" autoComplete="email" className="mb-3 flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring" />
+    <main className="flex min-h-screen items-center justify-center bg-carbon-0 p-6">
+      <Card className="w-full max-w-md px-8 py-8">
+        <div className="flex flex-col items-center text-center">
+          <AppMark className="mb-4 h-12 w-12" />
+          <h1 className="text-2xl font-medium leading-8 text-abyss-9">Welcome to Alkami Prototypes</h1>
+          <p className="mt-1 max-w-xs text-sm text-abyss-5">A shared space to explore what teammates are building and leave thoughtful feedback.</p>
+        </div>
+        <div className="mt-6 space-y-4">
+          {!supabaseConfigured ? <InfoBanner type="warning">{setupMessage}</InfoBanner> : null}
+          {error ? <InfoBanner type="danger">{error}</InfoBanner> : null}
+          {linkSent ? <InfoBanner type="success" title="Check your inbox">We sent a sign-in link to your {allowedEmailDomain} email. It expires after a short time and can only be used once.</InfoBanner> : null}
+          <div className="space-y-2">
+            <Label htmlFor="sign-in-email">Alkami email</Label>
+            <Input id="sign-in-email" value={email} onChange={(event) => { setEmail(event.target.value); setLinkSent(false); }} onKeyDown={(event) => { if (event.key === "Enter") void handleSignIn(); }} placeholder={`you@${allowedEmailDomain}`} type="email" autoComplete="email" />
+          </div>
           <Button className="w-full" size="lg" onClick={() => void handleSignIn()} disabled={signingIn || retryIn > 0 || !supabaseConfigured || !email.trim()}>
-            <Mail className="h-4 w-4" />{signingIn ? "Sending sign-in link…" : retryIn > 0 ? `Try again in ${retryIn}s` : "Email me a sign-in link"}
+            {signingIn ? <Loader2 className="animate-spin" /> : <Mail />}{signingIn ? "Sending sign-in link…" : retryIn > 0 ? `Try again in ${retryIn}s` : "Email me a sign-in link"}
           </Button>
-          <div className="my-6 flex items-center gap-3"><Separator className="flex-1" /><span className="text-xs text-muted-foreground">{allowedEmailDomain} users only</span><Separator className="flex-1" /></div>
-          <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />Access is checked against the Alkami email domain before the app loads. Slack identity and notifications can be connected later.</p>
-        </CardContent>
+        </div>
+        <Separator className="my-6 h-px w-full" />
+        <p className="flex items-start gap-2 text-xs text-abyss-5"><ShieldCheck className="h-4 w-4 shrink-0 text-tiaga-6" />Only {allowedEmailDomain} accounts can sign in. Access is checked before the app loads.</p>
       </Card>
     </main>
   );

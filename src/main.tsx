@@ -9,7 +9,7 @@ import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
   isFramed ? (
-    <main className="flex min-h-screen items-center justify-center bg-background p-6 text-center text-sm text-muted-foreground">
+    <main className="flex min-h-screen items-center justify-center bg-carbon-0 p-6 text-center text-sm text-abyss-5">
       Alkami Prototypes can't be previewed inside itself.
     </main>
   ) : (

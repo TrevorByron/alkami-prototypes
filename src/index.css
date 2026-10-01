@@ -132,31 +132,32 @@
     /* Semantic aliases used by the existing component layer. */
     --background: var(--color-abyss-0);
     --foreground: var(--color-abyss-9);
-    --heading: var(--color-carbon-9);
+    --heading: var(--color-abyss-9);
     --card: var(--color-abyss-0);
-    --card-foreground: var(--color-abyss-9);
+    --card-foreground: var(--color-abyss-7);
     --popover: var(--color-abyss-0);
     --popover-foreground: var(--color-abyss-9);
     --surface: var(--color-carbon-0);
-    --primary: var(--color-marine-6);
-    --primary-hover: var(--color-marine-7);
-    --primary-active: var(--color-marine-8);
+    /* Console's button recipe fills with marine.5 (hover 6, active 7). */
+    --primary: var(--color-marine-5);
+    --primary-hover: var(--color-marine-6);
+    --primary-active: var(--color-marine-7);
     --primary-foreground: var(--color-abyss-0);
     --secondary: var(--color-carbon-1);
-    --secondary-foreground: var(--color-carbon-9);
+    --secondary-foreground: var(--color-abyss-9);
     --muted: var(--color-carbon-1);
-    --muted-foreground: var(--color-carbon-7);
+    --muted-foreground: var(--color-abyss-5);
     --accent: var(--color-marine-0);
-    --accent-foreground: var(--color-marine-8);
+    --accent-foreground: var(--color-marine-5);
     --destructive: var(--color-chaparral-5);
     --destructive-foreground: var(--color-chaparral-0);
     --success: var(--color-tiaga-6);
     --success-foreground: var(--color-tiaga-0);
     --warning: var(--color-desert-5);
     --warning-foreground: var(--color-desert-0);
-    --border: var(--color-carbon-2);
+    --border: var(--color-carbon-3);
     --input: var(--color-carbon-3);
-    --ring: var(--color-marine-5);
+    --ring: var(--color-marine-2);
     --radius: var(--radius-8);
   }
 

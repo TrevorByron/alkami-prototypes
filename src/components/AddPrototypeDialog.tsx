@@ -1,19 +1,21 @@
 import { useState, type FormEvent } from "react";
-import { Loader2, Search, Sparkles } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { isDemoMode } from "@/lib/demoMode";
 import { isOwnApp } from "@/lib/selfEmbed";
 import { createDemoPrototype } from "@/lib/demoStore";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import type { EmbedCheck } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { InfoBanner } from "@/components/ui/info-banner";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { UserIdentity } from "@/components/UserIdentity";
 
 type Props = { open: boolean; onOpenChange: (open: boolean) => void; onCreated: () => void };
 
@@ -113,14 +115,14 @@ export function AddPrototypeDialog({ open, onOpenChange, onCreated }: Props) {
 
   return <Dialog open={open} onOpenChange={(next) => { if (!next) reset(); onOpenChange(next); }}>
     <DialogContent className="max-w-xl">
-      <DialogHeader><DialogTitle className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Sparkles className="h-4 w-4" /></span>Add a prototype</DialogTitle><DialogDescription>Give your team a place to review this hosted prototype together.</DialogDescription></DialogHeader>
-      <form className="space-y-5" onSubmit={(event) => void savePrototype(event)}>
-        <div className="space-y-2"><Label htmlFor="prototype-url">Prototype URL</Label><div className="flex gap-2"><Input id="prototype-url" value={url} onChange={(event) => setUrl(event.target.value)} onBlur={() => void checkUrl()} placeholder="https://your-prototype.example.com" type="url" required /><Button type="button" variant="outline" onClick={() => void checkUrl()} disabled={checking}>{checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}{checking ? "Checking" : "Check"}</Button></div>{check ? <div className={cn("rounded-lg border px-3 py-2.5 text-sm", check.embeddable ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900")}><div className="flex items-center justify-between gap-3"><span className="font-medium">{check.requires_sign_in ? "Ready to try in the frame" : check.embeddable ? "Ready to embed" : "Will open in a new tab"}</span><Badge variant="outline" className="bg-background/60">{check.requires_sign_in ? "Sign-in detected" : check.embeddable ? "Live" : "New tab"}</Badge></div><p className="mt-1 text-xs opacity-80">{check.reason}</p></div> : null}</div>
-        <div className="grid gap-5 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="prototype-name">Name</Label><Input id="prototype-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Treasury dashboard" required /></div><div className="space-y-2"><Label>Built by</Label><div className="flex h-10 items-center gap-2 rounded-md border bg-muted/30 px-3 text-sm"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold">{(profile?.name ?? user?.email ?? "A").split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase()}</span><span className="truncate">{profile?.name ?? user?.email ?? "Your Alkami account"}</span></div></div></div>
-        <div className="rounded-lg border border-dashed bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">Slack channel notifications are optional for now. We can connect this prototype to Slack later without changing who built it or who commented.</div>
-        <div className="space-y-2"><Label htmlFor="prototype-description">Description <span className="font-normal text-muted-foreground">(optional)</span></Label><textarea id="prototype-description" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="What should reviewers pay attention to?" className="flex min-h-20 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring" /></div>
-        {formError ? <p className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-800">{formError}</p> : null}
-        <DialogFooter><Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button><Button type="submit" disabled={saving || checking}>{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}{saving ? "Saving…" : "Add prototype"}</Button></DialogFooter>
+      <DialogHeader><DialogTitle>Add a prototype</DialogTitle><DialogDescription>Give your team a place to review this hosted prototype together.</DialogDescription></DialogHeader>
+      <form className="space-y-4" onSubmit={(event) => void savePrototype(event)}>
+        <div className="space-y-2"><Label htmlFor="prototype-url">Prototype URL</Label><div className="flex gap-2"><Input id="prototype-url" value={url} onChange={(event) => setUrl(event.target.value)} onBlur={() => void checkUrl()} placeholder="https://your-prototype.example.com" type="url" required /><Button type="button" variant="secondary" size="lg" onClick={() => void checkUrl()} disabled={checking}>{checking ? <Loader2 className="animate-spin" /> : <Search />}{checking ? "Checking" : "Check"}</Button></div>{check ? <InfoBanner type={check.embeddable ? "success" : "warning"} title={check.requires_sign_in ? "Ready to try in the frame" : check.embeddable ? "Ready to embed" : "Will open in a new tab"} action={<Badge variant={check.embeddable ? "success" : "warning"}>{check.requires_sign_in ? "Sign-in detected" : check.embeddable ? "Live" : "New tab"}</Badge>}>{check.reason}</InfoBanner> : null}</div>
+        <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="prototype-name">Name</Label><Input id="prototype-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Treasury dashboard" required /></div><div className="space-y-2"><Label>Built by</Label><div className="flex h-11 items-center rounded-lg border border-carbon-3 bg-carbon-0 px-3"><UserIdentity id={user?.id} name={profile?.name ?? user?.email ?? "Your Alkami account"} /></div></div></div>
+        <InfoBanner type="grayscale">Slack notifications are optional for now. You can connect this prototype to Slack later without changing who built it or who commented.</InfoBanner>
+        <div className="space-y-2"><Label htmlFor="prototype-description">Description <span className="font-normal text-abyss-5">(optional)</span></Label><Textarea id="prototype-description" value={description} onChange={(event) => setDescription(event.target.value)} placeholder="What should reviewers pay attention to?" className="resize-none" /></div>
+        {formError ? <InfoBanner type="danger">{formError}</InfoBanner> : null}
+        <DialogFooter><Button type="button" variant="secondary" size="lg" onClick={() => onOpenChange(false)}>Cancel</Button><Button type="submit" size="lg" disabled={saving || checking}>{saving ? <Loader2 className="animate-spin" /> : null}{saving ? "Saving…" : "Add prototype"}</Button></DialogFooter>
       </form>
     </DialogContent>
   </Dialog>;
