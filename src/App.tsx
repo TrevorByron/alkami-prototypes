@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Route, Routes, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowUpRight, CircleHelp, LayoutGrid, Loader2, MessageSquare, Moon, Plus, Search, Sparkles, Sun, Trash2, Users } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, CircleHelp, LayoutGrid, Loader2, MessageSquare, Plus, Search, Sparkles, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -21,17 +21,13 @@ import type { PrototypeSummary } from "@/lib/types";
 import { SignIn } from "@/pages/SignIn";
 import { ViewerPage } from "@/pages/ViewerPage";
 
-type Theme = "light" | "dark";
-
 function App() {
-  const [theme, setTheme] = useState<Theme>("light");
-
   return (
-    <div className={theme === "dark" ? "dark" : ""}>
+    <div>
       <Routes>
-        <Route path="/signin" element={<SignIn theme={theme} onToggleTheme={() => setTheme(theme === "light" ? "dark" : "light")} />} />
-        <Route path="/" element={<ProtectedRoute><Library theme={theme} onToggleTheme={() => setTheme(theme === "light" ? "dark" : "light")} /></ProtectedRoute>} />
-        <Route path="/p/:prototypeId" element={<ProtectedRoute><ViewerPage theme={theme} onToggleTheme={() => setTheme(theme === "light" ? "dark" : "light")} /></ProtectedRoute>} />
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/" element={<ProtectedRoute><Library /></ProtectedRoute>} />
+        <Route path="/p/:prototypeId" element={<ProtectedRoute><ViewerPage /></ProtectedRoute>} />
       </Routes>
       <Toaster />
     </div>
@@ -42,7 +38,7 @@ function AppMark() {
   return <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm"><Sparkles className="h-4 w-4" /></span>;
 }
 
-function TopBar({ theme, onToggleTheme, viewer = false }: { theme: Theme; onToggleTheme: () => void; viewer?: boolean }) {
+function TopBar({ viewer = false }: { viewer?: boolean }) {
   const navigate = useNavigate();
   const { profile, user, signOut } = useAuth();
   const displayName = profile?.name ?? user?.email ?? "Slack member";
@@ -60,18 +56,15 @@ function TopBar({ theme, onToggleTheme, viewer = false }: { theme: Theme; onTogg
         {viewer && <><Separator className="mx-2 h-5 w-px" /><span className="text-sm text-muted-foreground">Reviewing prototype</span></>}
       </div>
       <div className="flex items-center gap-2">
-        <Button aria-label={theme === "light" ? "Use dark mode" : "Use light mode"} variant="ghost" size="icon" onClick={onToggleTheme}>
-          {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-        </Button>
         <Button variant="ghost" className="hidden gap-2 text-muted-foreground sm:flex"><CircleHelp className="h-4 w-4" />Help</Button>
         <Button variant="ghost" className="hidden text-muted-foreground sm:flex" onClick={() => void signOut()}>Sign out</Button>
-        <Avatar className="ml-1 h-8 w-8 border border-border"><AvatarFallback className="bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">{initials}</AvatarFallback></Avatar>
+        <Avatar className="ml-1 h-8 w-8 border border-border"><AvatarFallback className="bg-indigo-100 text-indigo-700">{initials}</AvatarFallback></Avatar>
       </div>
     </header>
   );
 }
 
-function Library({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
+function Library() {
   const [query, setQuery] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const { prototypes, loading, error, refresh, remove } = usePrototypes();
@@ -81,11 +74,11 @@ function Library({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => 
 
   return (
     <div className="min-h-screen bg-background">
-      <TopBar theme={theme} onToggleTheme={onToggleTheme} />
+      <TopBar />
       <main className="mx-auto max-w-7xl px-5 py-10 md:px-8 md:py-14">
         <section className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
-            <div className="mb-4 flex items-center gap-2"><Badge variant="muted" className="gap-1.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200"><LayoutGrid className="h-3.5 w-3.5" />Workspace</Badge>{isDemoMode ? <Badge variant="outline" className="border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-300">Local demo mode</Badge> : null}</div>
+            <div className="mb-4 flex items-center gap-2"><Badge variant="muted" className="gap-1.5 bg-indigo-50 text-indigo-700"><LayoutGrid className="h-3.5 w-3.5" />Workspace</Badge>{isDemoMode ? <Badge variant="outline" className="border-amber-300 text-amber-700">Local demo mode</Badge> : null}</div>
             <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">Alkami Prototypes</h1>
             <p className="mt-2 max-w-xl text-muted-foreground">One shared home for prototypes built across Alkami. Explore what teammates are making, leave feedback, and keep ideas moving together.</p>
           </div>
@@ -93,9 +86,9 @@ function Library({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => 
         </section>
 
         <div className="mb-8 grid gap-3 sm:grid-cols-3">
-          <Card className="bg-card/70"><CardContent className="flex items-center gap-3 p-4"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200"><LayoutGrid className="h-4 w-4" /></div><div><p className="text-sm font-medium">Shared library</p><p className="text-xs text-muted-foreground">{prototypes.length} {prototypes.length === 1 ? "prototype" : "prototypes"} from the team</p></div></CardContent></Card>
-          <Card className="bg-card/70"><CardContent className="flex items-center gap-3 p-4"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-200"><MessageSquare className="h-4 w-4" /></div><div><p className="text-sm font-medium">Open conversations</p><p className="text-xs text-muted-foreground">{openConversations} {openConversations === 1 ? "thread" : "threads"} waiting for feedback</p></div></CardContent></Card>
-          <Card className="bg-card/70"><CardContent className="flex items-center gap-3 p-4"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200"><Users className="h-4 w-4" /></div><div><p className="text-sm font-medium">Team contributors</p><p className="text-xs text-muted-foreground">{contributors} {contributors === 1 ? "builder" : "builders"} sharing ideas</p></div></CardContent></Card>
+          <Card className="bg-card/70"><CardContent className="flex items-center gap-3 p-4"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700"><LayoutGrid className="h-4 w-4" /></div><div><p className="text-sm font-medium">Shared library</p><p className="text-xs text-muted-foreground">{prototypes.length} {prototypes.length === 1 ? "prototype" : "prototypes"} from the team</p></div></CardContent></Card>
+          <Card className="bg-card/70"><CardContent className="flex items-center gap-3 p-4"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700"><MessageSquare className="h-4 w-4" /></div><div><p className="text-sm font-medium">Open conversations</p><p className="text-xs text-muted-foreground">{openConversations} {openConversations === 1 ? "thread" : "threads"} waiting for feedback</p></div></CardContent></Card>
+          <Card className="bg-card/70"><CardContent className="flex items-center gap-3 p-4"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Users className="h-4 w-4" /></div><div><p className="text-sm font-medium">Team contributors</p><p className="text-xs text-muted-foreground">{contributors} {contributors === 1 ? "builder" : "builders"} sharing ideas</p></div></CardContent></Card>
         </div>
 
         <div className="mb-7 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -132,7 +125,7 @@ function PrototypeCard({ prototype, onDelete }: { prototype: PrototypeSummary; o
   }
 
   return (
-    <Card className="relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-xl hover:shadow-indigo-100/40 dark:hover:shadow-black/20">
+    <Card className="relative overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-xl hover:shadow-indigo-100/40">
       <Link to={`/p/${prototype.id}`} className="group block">
         <div className="h-2 bg-gradient-to-r from-indigo-500 to-violet-500" />
         <div className="relative h-36 overflow-hidden border-b bg-muted">
@@ -159,10 +152,10 @@ function PrototypeCard({ prototype, onDelete }: { prototype: PrototypeSummary; o
         </CardContent>
       </Link>
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogTrigger asChild><Button type="button" variant="secondary" size="icon" className="absolute right-4 top-6 z-10 h-8 w-8 border bg-background/90 shadow-sm backdrop-blur hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40" aria-label={`Delete ${prototype.name}`}><Trash2 className="h-3.5 w-3.5" /></Button></DialogTrigger>
+        <DialogTrigger asChild><Button type="button" variant="secondary" size="icon" className="absolute right-4 top-6 z-10 h-8 w-8 border bg-background/90 shadow-sm backdrop-blur hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700" aria-label={`Delete ${prototype.name}`}><Trash2 className="h-3.5 w-3.5" /></Button></DialogTrigger>
         <DialogContent>
           <DialogHeader><DialogTitle>Delete this prototype?</DialogTitle><DialogDescription>This will remove <span className="font-medium text-foreground">{prototype.name}</span> from the shared library and delete its comments and replies. This cannot be undone.</DialogDescription></DialogHeader>
-          <DialogFooter><Button type="button" variant="ghost" onClick={() => setDeleteOpen(false)} disabled={deleting}>Cancel</Button><Button type="button" variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-950/40" onClick={() => void handleDelete()} disabled={deleting}>{deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}{deleting ? "Deleting…" : "Delete prototype"}</Button></DialogFooter>
+          <DialogFooter><Button type="button" variant="ghost" onClick={() => setDeleteOpen(false)} disabled={deleting}>Cancel</Button><Button type="button" variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-50 hover:text-rose-800" onClick={() => void handleDelete()} disabled={deleting}>{deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}{deleting ? "Deleting…" : "Delete prototype"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>
@@ -174,7 +167,7 @@ function EmptySearch() {
 }
 
 function EmptyLibrary({ onAdd }: { onAdd: () => void }) {
-  return <Card className="border-dashed"><CardContent className="flex min-h-72 flex-col items-center justify-center text-center"><div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300"><Sparkles className="h-5 w-5" /></div><h2 className="font-medium">Your review library is empty</h2><p className="mt-1 max-w-sm text-sm text-muted-foreground">Add a hosted prototype to give your team a shared place for focused feedback.</p><Button className="mt-5" onClick={onAdd}><Plus className="h-4 w-4" />Add your first prototype</Button></CardContent></Card>;
+  return <Card className="border-dashed"><CardContent className="flex min-h-72 flex-col items-center justify-center text-center"><div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600"><Sparkles className="h-5 w-5" /></div><h2 className="font-medium">Your review library is empty</h2><p className="mt-1 max-w-sm text-sm text-muted-foreground">Add a hosted prototype to give your team a shared place for focused feedback.</p><Button className="mt-5" onClick={onAdd}><Plus className="h-4 w-4" />Add your first prototype</Button></CardContent></Card>;
 }
 
 function SkeletonGrid() {
@@ -204,14 +197,14 @@ function contributorCount(prototypes: PrototypeSummary[]) {
 }
 
 /* Legacy viewer shell retained in history; the functional viewer lives in ViewerPage.tsx.
-function Viewer({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void }) {
+function Viewer() {
   const { prototypeId } = useParams();
   const [mode, setMode] = useState<"browse" | "comment">("browse");
   const name = prototypeId === "treasury-dashboard" ? "Treasury dashboard" : "Prototype preview";
 
   return (
     <div className="min-h-screen bg-background">
-      <TopBar theme={theme} onToggleTheme={onToggleTheme} viewer />
+      <TopBar viewer />
       <main className="flex min-h-[calc(100vh-4rem)] flex-col">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-card px-5 py-3 md:px-8">
           <div className="flex items-center gap-3"><h1 className="font-medium">{name}</h1><Badge variant="muted" className="hidden sm:inline-flex">Draft</Badge></div>
@@ -221,7 +214,7 @@ function Viewer({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => v
         <div className="dot-grid flex flex-1 items-center justify-center p-5 md:p-10">
           <Card className="w-full max-w-4xl overflow-hidden border-2 border-dashed bg-card/90">
             <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-3"><div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-red-400" /><span className="h-2.5 w-2.5 rounded-full bg-amber-400" /><span className="h-2.5 w-2.5 rounded-full bg-emerald-400" /></div><span className="text-xs text-muted-foreground">{name.toLowerCase().replaceAll(" ", "-")}.vercel.app</span><div className="w-12" /></div>
-            <CardContent className="flex min-h-[24rem] flex-col items-center justify-center text-center md:min-h-[32rem]"><div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300"><Check className="h-6 w-6" /></div><CardTitle className="text-xl">Viewer shell is ready</CardTitle><CardDescription className="mt-2 max-w-md">The live prototype frame, pinned comments, and review thread will land in the next milestones.</CardDescription><div className="mt-6 flex flex-wrap justify-center gap-3"><Button onClick={() => setMode(mode === "browse" ? "comment" : "browse")} variant={mode === "comment" ? "default" : "outline"}><MessageSquare className="h-4 w-4" />{mode === "comment" ? "Comment mode on" : "Try comment mode"}</Button><Button variant="ghost" size="sm"><ChevronDown className="h-4 w-4" />Desktop 1440</Button></div></CardContent>
+            <CardContent className="flex min-h-[24rem] flex-col items-center justify-center text-center md:min-h-[32rem]"><div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600"><Check className="h-6 w-6" /></div><CardTitle className="text-xl">Viewer shell is ready</CardTitle><CardDescription className="mt-2 max-w-md">The live prototype frame, pinned comments, and review thread will land in the next milestones.</CardDescription><div className="mt-6 flex flex-wrap justify-center gap-3"><Button onClick={() => setMode(mode === "browse" ? "comment" : "browse")} variant={mode === "comment" ? "default" : "outline"}><MessageSquare className="h-4 w-4" />{mode === "comment" ? "Comment mode on" : "Try comment mode"}</Button><Button variant="ghost" size="sm"><ChevronDown className="h-4 w-4" />Desktop 1440</Button></div></CardContent>
           </Card>
         </div>
       </main>

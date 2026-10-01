@@ -160,36 +160,6 @@
     --radius: var(--radius-8);
   }
 
-  .dark {
-    /* Console has no upstream dark palette; keep the same family relationships. */
-    --background: var(--color-abyss-9);
-    --foreground: var(--color-carbon-0);
-    --heading: var(--color-carbon-0);
-    --card: var(--color-abyss-8);
-    --card-foreground: var(--color-carbon-0);
-    --popover: var(--color-abyss-8);
-    --popover-foreground: var(--color-carbon-0);
-    --surface: var(--color-abyss-8);
-    --primary: var(--color-marine-4);
-    --primary-hover: var(--color-marine-3);
-    --primary-active: var(--color-marine-2);
-    --primary-foreground: var(--color-marine-9);
-    --secondary: var(--color-abyss-7);
-    --secondary-foreground: var(--color-carbon-0);
-    --muted: var(--color-abyss-7);
-    --muted-foreground: var(--color-carbon-5);
-    --accent: var(--color-marine-9);
-    --accent-foreground: var(--color-marine-1);
-    --destructive: var(--color-chaparral-4);
-    --destructive-foreground: var(--color-chaparral-0);
-    --success: var(--color-tiaga-5);
-    --success-foreground: var(--color-tiaga-0);
-    --warning: var(--color-desert-4);
-    --warning-foreground: var(--color-desert-0);
-    --border: var(--color-carbon-8);
-    --input: var(--color-carbon-7);
-    --ring: var(--color-marine-3);
-  }
 
   * {
     @apply border-border;
