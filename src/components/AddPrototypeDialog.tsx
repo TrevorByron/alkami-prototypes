@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { isDemoMode } from "@/lib/demoMode";
+import { isOwnApp } from "@/lib/selfEmbed";
 import { createDemoPrototype } from "@/lib/demoStore";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -44,6 +45,10 @@ export function AddPrototypeDialog({ open, onOpenChange, onCreated }: Props) {
       new URL(normalized);
     } catch {
       setFormError("Enter a valid URL.");
+      return;
+    }
+    if (isOwnApp(normalized)) {
+      setFormError("This is the Alkami Prototypes app itself. Add a prototype hosted somewhere else.");
       return;
     }
     setChecking(true); setFormError(null); setCheck(null);
