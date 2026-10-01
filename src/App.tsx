@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Route, Routes, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowUpRight, CircleHelp, LayoutGrid, Loader2, MessageSquare, Plus, Search, Sparkles, Trash2, Users } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, LayoutGrid, Loader2, MessageSquare, Plus, Search, Sparkles, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -56,7 +56,6 @@ function TopBar({ viewer = false }: { viewer?: boolean }) {
         {viewer && <><Separator className="mx-2 h-5 w-px" /><span className="text-sm text-muted-foreground">Reviewing prototype</span></>}
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="ghost" className="hidden gap-2 text-muted-foreground sm:flex"><CircleHelp className="h-4 w-4" />Help</Button>
         <Button variant="ghost" className="hidden text-muted-foreground sm:flex" onClick={() => void signOut()}>Sign out</Button>
         <Avatar className="ml-1 h-8 w-8 border border-border"><AvatarFallback className="bg-indigo-100 text-indigo-700">{initials}</AvatarFallback></Avatar>
       </div>
