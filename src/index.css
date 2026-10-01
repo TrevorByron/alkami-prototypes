@@ -2,42 +2,193 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Alkami Console-aligned foundation.
+ *
+ * Primitive values mirror Console Global Styles 2.0. The semantic aliases
+ * below keep the shadcn-style components in this prototype on one token
+ * contract, so surfaces and controls do not accumulate local hex values.
+ */
 @layer base {
   :root {
-    --background: 220 25% 97%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --primary: 241 59% 54%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 20% 94%;
-    --secondary-foreground: 222 47% 18%;
-    --muted: 220 20% 94%;
-    --muted-foreground: 220 10% 45%;
-    --accent: 242 80% 96%;
-    --accent-foreground: 241 59% 42%;
-    --border: 220 18% 88%;
-    --input: 220 18% 84%;
-    --ring: 241 59% 54%;
-    --radius: 0.75rem;
+    /* Console color primitives — HSL channels keep Tailwind opacity utilities working. */
+    --color-carbon-0: 210 16.7% 97.6%;
+    --color-carbon-1: 220 8.6% 93.1%;
+    --color-carbon-2: 220 10% 88.2%;
+    --color-carbon-3: 213.3 10.3% 82.9%;
+    --color-carbon-4: 215 10.3% 77.3%;
+    --color-carbon-5: 215.3 11.4% 70.8%;
+    --color-carbon-6: 216 10.8% 63.5%;
+    --color-carbon-7: 216.9 11.3% 54.9%;
+    --color-carbon-8: 216.4 12.6% 43.5%;
+    --color-carbon-9: 217.5 12.3% 25.5%;
+
+    --color-marine-0: 214.7 65.5% 94.3%;
+    --color-marine-1: 215.7 70% 88.2%;
+    --color-marine-2: 215.5 68.7% 81.2%;
+    --color-marine-3: 216 69.3% 73.1%;
+    --color-marine-4: 215.9 69.5% 62.7%;
+    --color-marine-5: 216.1 77.7% 47.5%;
+    --color-marine-6: 216.2 77.9% 42.5%;
+    --color-marine-7: 215.9 77.8% 37.1%;
+    --color-marine-8: 220.4 63.3% 33.1%;
+    --color-marine-9: 216 78% 21.4%;
+
+    --color-chaparral-0: 6.7 69.2% 94.9%;
+    --color-chaparral-1: 6.3 70.4% 89.4%;
+    --color-chaparral-2: 5.9 70.1% 82.9%;
+    --color-chaparral-3: 6.1 69.8% 75.3%;
+    --color-chaparral-4: 6.3 69.7% 65.1%;
+    --color-chaparral-5: 6.1 77.7% 47.5%;
+    --color-chaparral-6: 6 78% 42.7%;
+    --color-chaparral-7: 6 78% 37.5%;
+    --color-chaparral-8: 6.3 78.3% 30.8%;
+    --color-chaparral-9: 6.1 78.6% 22%;
+
+    --color-tiaga-0: 157.1 67.7% 93.9%;
+    --color-tiaga-1: 156 69.2% 87.3%;
+    --color-tiaga-2: 156.3 68.9% 79.8%;
+    --color-tiaga-3: 155.9 69.9% 71.4%;
+    --color-tiaga-4: 155.8 69.8% 61%;
+    --color-tiaga-5: 156.4 79.9% 46.9%;
+    --color-tiaga-6: 156 78% 42.7%;
+    --color-tiaga-7: 156.2 78% 37.5%;
+    --color-tiaga-8: 156 78.6% 31.2%;
+    --color-tiaga-9: 156 78.9% 22.4%;
+
+    --color-desert-0: 36.5 69.7% 93.5%;
+    --color-desert-1: 35.7 68.1% 86.5%;
+    --color-desert-2: 36.3 70.4% 78.8%;
+    --color-desert-3: 35.9 69.9% 70%;
+    --color-desert-4: 36.1 69.8% 59.8%;
+    --color-desert-5: 36.1 77.7% 47.5%;
+    --color-desert-6: 36 78% 42.7%;
+    --color-desert-7: 35.8 78% 37.5%;
+    --color-desert-8: 36.1 78.3% 30.8%;
+    --color-desert-9: 36.1 78.6% 22%;
+
+    --color-alpine-0: 275.3 68% 95.1%;
+    --color-alpine-1: 272.1 66.7% 91.8%;
+    --color-alpine-2: 273.6 65.8% 85.1%;
+    --color-alpine-3: 275.1 65.1% 75.3%;
+    --color-alpine-4: 275.9 62.9% 65.1%;
+    --color-alpine-5: 277 55.6% 55.9%;
+    --color-alpine-6: 277.3 49.3% 44.1%;
+    --color-alpine-7: 278.1 46.3% 39.4%;
+    --color-alpine-8: 278.6 44.8% 32%;
+    --color-alpine-9: 278.8 60.7% 21%;
+
+    --color-abyss-0: 0 0% 100%;
+    --color-abyss-1: 220 8.6% 93.1%;
+    --color-abyss-2: 210 2.2% 82%;
+    --color-abyss-3: 210 1.4% 71.8%;
+    --color-abyss-4: 210 1% 62%;
+    --color-abyss-5: 210 0.9% 42%;
+    --color-abyss-6: 210 1.2% 31.8%;
+    --color-abyss-7: 210 1.8% 22%;
+    --color-abyss-8: 210 3.4% 11.4%;
+    --color-abyss-9: 210 20% 2%;
+
+    /* Console typography scale. */
+    --font-family-base: "Fira Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-size-title: 24px;
+    --line-height-title: 32px;
+    --font-size-subheader: 20px;
+    --line-height-subheader: 24px;
+    --font-size-section: 16px;
+    --line-height-section: 20px;
+    --font-size-body: 14px;
+    --line-height-body: 20px;
+    --font-size-caption: 12px;
+    --line-height-caption: 16px;
+
+    /* Console spacing, radius, stroke, and elevation scales. */
+    --space-2: 0.125rem;
+    --space-4: 0.25rem;
+    --space-8: 0.5rem;
+    --space-12: 0.75rem;
+    --space-16: 1rem;
+    --space-20: 1.25rem;
+    --space-24: 1.5rem;
+    --space-32: 2rem;
+    --space-40: 2.5rem;
+    --space-48: 3rem;
+    --space-56: 3.5rem;
+    --space-64: 4rem;
+    --radius-none: 0;
+    --radius-2: 0.125rem;
+    --radius-4: 0.25rem;
+    --radius-8: 0.5rem;
+    --radius-12: 0.75rem;
+    --radius-16: 1rem;
+    --radius-round: 50%;
+    --border-width-control: 2px;
+    --border-width-hairline: 1px;
+    --shadow-tropo: 0 5px 10px 0 rgb(0 0 0 / 0.05);
+    --shadow-strato: 0 10px 15px 0 rgb(0 0 0 / 0.1);
+    --shadow-meso: 0 5px 20px 0 rgb(0 0 0 / 0.4);
+    --shadow-thermo: 0 20px 40px 0 rgb(0 0 0 / 0.1);
+
+    /* Semantic aliases used by the existing component layer. */
+    --background: var(--color-abyss-0);
+    --foreground: var(--color-abyss-9);
+    --heading: var(--color-carbon-9);
+    --card: var(--color-abyss-0);
+    --card-foreground: var(--color-abyss-9);
+    --popover: var(--color-abyss-0);
+    --popover-foreground: var(--color-abyss-9);
+    --surface: var(--color-carbon-0);
+    --primary: var(--color-marine-6);
+    --primary-hover: var(--color-marine-7);
+    --primary-active: var(--color-marine-8);
+    --primary-foreground: var(--color-abyss-0);
+    --secondary: var(--color-carbon-1);
+    --secondary-foreground: var(--color-carbon-9);
+    --muted: var(--color-carbon-1);
+    --muted-foreground: var(--color-carbon-7);
+    --accent: var(--color-marine-0);
+    --accent-foreground: var(--color-marine-8);
+    --destructive: var(--color-chaparral-5);
+    --destructive-foreground: var(--color-chaparral-0);
+    --success: var(--color-tiaga-6);
+    --success-foreground: var(--color-tiaga-0);
+    --warning: var(--color-desert-5);
+    --warning-foreground: var(--color-desert-0);
+    --border: var(--color-carbon-2);
+    --input: var(--color-carbon-3);
+    --ring: var(--color-marine-5);
+    --radius: var(--radius-8);
   }
 
   .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
-    --card: 222 40% 11%;
-    --card-foreground: 210 40% 98%;
-    --primary: 242 75% 70%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 217 33% 18%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 18%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 241 40% 20%;
-    --accent-foreground: 242 75% 80%;
-    --border: 217 33% 21%;
-    --input: 217 33% 25%;
-    --ring: 242 75% 70%;
+    /* Console has no upstream dark palette; keep the same family relationships. */
+    --background: var(--color-abyss-9);
+    --foreground: var(--color-carbon-0);
+    --heading: var(--color-carbon-0);
+    --card: var(--color-abyss-8);
+    --card-foreground: var(--color-carbon-0);
+    --popover: var(--color-abyss-8);
+    --popover-foreground: var(--color-carbon-0);
+    --surface: var(--color-abyss-8);
+    --primary: var(--color-marine-4);
+    --primary-hover: var(--color-marine-3);
+    --primary-active: var(--color-marine-2);
+    --primary-foreground: var(--color-marine-9);
+    --secondary: var(--color-abyss-7);
+    --secondary-foreground: var(--color-carbon-0);
+    --muted: var(--color-abyss-7);
+    --muted-foreground: var(--color-carbon-5);
+    --accent: var(--color-marine-9);
+    --accent-foreground: var(--color-marine-1);
+    --destructive: var(--color-chaparral-4);
+    --destructive-foreground: var(--color-chaparral-0);
+    --success: var(--color-tiaga-5);
+    --success-foreground: var(--color-tiaga-0);
+    --warning: var(--color-desert-4);
+    --warning-foreground: var(--color-desert-0);
+    --border: var(--color-carbon-8);
+    --input: var(--color-carbon-7);
+    --ring: var(--color-marine-3);
   }
 
   * {
@@ -45,8 +196,10 @@
   }
 
   body {
-    @apply min-h-screen bg-background font-sans text-foreground antialiased;
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    @apply min-h-screen bg-background text-foreground antialiased;
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
   }
 }
 

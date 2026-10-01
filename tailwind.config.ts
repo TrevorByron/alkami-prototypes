@@ -27,14 +27,28 @@ export default {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
-      card: {
-        DEFAULT: "hsl(var(--card))",
-        foreground: "hsl(var(--card-foreground))",
-      },
-      popover: {
-        DEFAULT: "hsl(var(--card))",
-        foreground: "hsl(var(--card-foreground))",
-      },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        surface: "hsl(var(--surface))",
+        heading: "hsl(var(--heading))",
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -42,7 +56,11 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       boxShadow: {
-        soft: "0 18px 55px -30px hsl(221 36% 22% / 0.28)",
+        tropo: "var(--shadow-tropo)",
+        strato: "var(--shadow-strato)",
+        meso: "var(--shadow-meso)",
+        thermo: "var(--shadow-thermo)",
+        soft: "var(--shadow-tropo)",
       },
     },
   },

@@ -1,6 +1,6 @@
 # Alkami Prototypes
 
-Alkami Prototypes is a shared internal review space for hosted prototypes. Teams can sign in with an Alkami email magic link, discover prototypes built by teammates, open a prototype in a controlled viewer, leave viewport-aware pins, and discuss them in threads. Slack identity and notifications remain optional for a future integration.
+Alkami Prototypes is a shared internal review space for hosted prototypes. Teams can sign in with an Alkami email magic link, discover prototypes built by teammates, open a prototype in a controlled viewer, capture screenshot-based feedback, and discuss it in threads. Slack identity and notifications remain optional for a future integration.
 
 ## Local setup
 
@@ -26,7 +26,7 @@ Open `http://127.0.0.1:5173/#/signin` after starting Vite. Restart Vite after ch
 ## Supabase and access setup
 
 1. In Supabase Auth, keep Email enabled for Magic Links and add the local/public app URL to the allowed redirect URLs.
-2. Apply the migrations with `supabase db push`, including `20260928170000_email_auth.sql`. The auth trigger fails closed when the email domain does not match the configured Alkami domain.
+2. Apply the migrations with `supabase db push`, including `20260928170000_email_auth.sql`, `20260929090000_backfill_email_profiles.sql`, and `20260929100000_comment_snapshots.sql`. The auth trigger fails closed when the email domain does not match the configured Alkami domain.
 3. The migration defaults to `alkami.com`. If the company domain ever changes, update the `ALLOWED_EMAIL_DOMAIN` Supabase Vault secret used by the database trigger and the matching Edge Function secret. The browser-side `VITE_ALLOWED_EMAIL_DOMAIN` is only a UX convenience; the database trigger is the security boundary.
 4. Slack is intentionally optional. When approval is available later, configure these Edge Function secrets and set `VITE_SLACK_NOTIFICATIONS_ENABLED=true`:
 
@@ -36,6 +36,8 @@ Open `http://127.0.0.1:5173/#/signin` after starting Vite. Restart Vite after ch
    - `SLACK_BOT_TOKEN`
 
    The Slack bot needs permission to list users/channels, post messages, reply in threads, and add the `white_check_mark` reaction. Slack-specific profile fields and prototype channel fields remain nullable so Slack can be added later without changing comment ownership.
+
+The `check-embed` Edge Function decides whether a prototype can be shown in the live frame or should open in a new tab. If it has not been deployed yet, the Add prototype dialog falls back safely to new-tab mode so a prototype can still be added.
 
 ## Deploying to GitLab Pages
 
@@ -54,74 +56,19 @@ The `deploy-functions` job is manual and deploys `check-embed`, `slack-directory
 
 - Add a URL and blur the field to run `check-embed`.
 - `example.com` should be eligible for a live frame; sites that reject framing, such as GitHub, are marked new-tab-only.
-- In the viewer, choose a device width, choose `Pin comment` in the comments panel, and click the frame to place a pin.
-- The comments panel is visible by default with an open general-feedback composer. Choose `Pin comment` in that panel only when feedback should target a specific spot in the frame; Browse remains the default interaction mode.
-- Comments are scoped to the prototype route that was visible when they were created. The viewer saves the route, scroll position, and (when same-origin access or the bridge below is available) a CSS selector for the clicked element. Switching routes clears the current page's pins and thread list; opening a thread restores its route and scroll context.
-- General comments can be posted from the persistent comments panel or the floating action. They have no route, pin, scroll position, or element selector and remain visible across the prototype.
-- `?comment=<comment-id>` selects the thread, switches to its saved viewport, and pulses the pin.
+- The comments panel is visible by default with a general comment composer at the top and a scrollable YouTube-style conversation below. Replies stay nested under the comment they belong to.
+- A comment can include an optional image attachment. Reviewers can use the attachment button or drag an image onto the comment input; it previews before posting and appears inline with the comment afterward.
+- Attachments upload to a private Supabase Storage bucket; no screen-sharing permission, iframe bridge, or DOM access is involved.
+- General comments can be posted from the persistent comments panel. They have no screenshot or page association and remain visible across the prototype.
 - Replies, resolve/reopen, and Slack notifications are non-blocking follow-up actions after the database write succeeds.
 
 ## Known limits
 
-- Pins with a saved element selector follow that element while it is available; comments without a selector fall back to their original viewport-relative position.
+- Images must be selected by the reviewer and are limited to 10 MB in the composer.
 - Some SSO prototypes cannot be authenticated inside an iframe. The viewer provides a popup sign-in flow and a new-tab fallback.
 - Safari and Firefox may still require opening SSO-heavy prototypes in a new tab.
 - The iframe sandbox intentionally does not allow top-level navigation.
-- Cross-origin SPAs cannot be inspected by the parent page because of browser security. To report client-side route changes, scroll, and the element under review, add this small bridge to the embedded prototype:
+- No prototype-side bridge, selector tagging, or DOM inspection is required.
 
-  Add `data-commentor-id="unique-name"` to important review targets when possible; those stable identifiers are preferred over generated tag paths.
-
-  ```js
-  const selectorFor = (element) => {
-    if (!element) return null;
-    element = element.closest("[data-commentor-id]") || element;
-    if (element.dataset.commentorId) return `[data-commentor-id="${CSS.escape(element.dataset.commentorId)}"]`;
-    if (element.id) return `#${CSS.escape(element.id)}`;
-    return element.tagName.toLowerCase();
-  };
-
-  const reportCommentorContext = (selector = null) => window.parent.postMessage({
-    type: "commentor:context",
-    url: window.location.href,
-    scrollY: window.scrollY,
-    selector,
-  }, "*");
-
-  ["pushState", "replaceState"].forEach((method) => {
-    const original = history[method];
-    history[method] = function (...args) {
-      const result = original.apply(this, args);
-      reportCommentorContext();
-      return result;
-    };
-  });
-
-  window.addEventListener("message", (event) => {
-    const message = event.data;
-    if (message?.type === "commentor:inspect") {
-      const element = document.elementFromPoint(message.x, message.y);
-      event.source?.postMessage({
-        type: "commentor:inspection",
-        requestId: message.requestId,
-        url: window.location.href,
-        scrollY: window.scrollY,
-        selector: selectorFor(element),
-      }, event.origin || "*");
-    }
-    if (message?.type === "commentor:restore") {
-      const element = message.selector ? document.querySelector(message.selector) : null;
-      if (element) element.scrollIntoView({ block: "center", behavior: "auto" });
-      else window.scrollTo({ top: message.scrollY ?? 0, behavior: "auto" });
-      reportCommentorContext(message.selector ?? null);
-    }
-  });
-
-  window.addEventListener("scroll", () => reportCommentorContext(), { passive: true });
-  window.addEventListener("popstate", () => reportCommentorContext());
-  window.addEventListener("hashchange", () => reportCommentorContext());
-  reportCommentorContext();
-  ```
-
-  The viewer sends `{ type: "commentor:restore", url, scrollY, selector }` when a thread is opened, so the prototype can call `history.replaceState`/`pushState`, scroll to the selector, or otherwise restore its own route context.
-- Screenshots, thumbnails, attachments, drawing tools, @mentions, email, per-prototype permissions, and Slack interactive buttons are out of scope for this MVP.
+- Automatic screen capture, drawing tools, @mentions, email, per-prototype permissions, and Slack interactive buttons are out of scope for this MVP.
 - Slack failures show a toast after the review write; they do not roll back the comment, reply, or status change.

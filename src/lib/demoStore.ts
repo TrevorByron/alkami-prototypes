@@ -69,8 +69,8 @@ export function listDemoComments(prototypeId: string) {
   return read<CommentRecord>(commentsKey).filter((comment) => comment.prototype_id === prototypeId).map((comment) => ({ ...comment, page_url: "page_url" in comment ? comment.page_url : prototypeUrl, author: author(), replies: replies.filter((reply) => reply.comment_id === comment.id).map((reply) => ({ ...reply, author: author() })) }));
 }
 
-export function addDemoComment(input: { prototype_id: string; body: string; page_url: string | null; screen_label: string | null; viewport: Viewport | null; x_pct: number | null; y_pct: number | null; selector: string | null; scroll_y: number | null; }) {
-  const comment: CommentRecord = { id: crypto.randomUUID(), ...input, author_id: demoProfile.id, status: "open", snapshot_url: null, slack_ts: null, resolved_by: null, resolved_at: null, resolution_note: null, created_at: now(), author: author(), replies: [] };
+export function addDemoComment(input: { prototype_id: string; body: string; page_url: string | null; screen_label: string | null; viewport: Viewport | null; x_pct: number | null; y_pct: number | null; selector: string | null; scroll_y: number | null; snapshot_url: string | null; }) {
+  const comment: CommentRecord = { id: crypto.randomUUID(), ...input, author_id: demoProfile.id, status: "open", slack_ts: null, resolved_by: null, resolved_at: null, resolution_note: null, created_at: now(), author: author(), replies: [] };
   write(commentsKey, [...read<CommentRecord>(commentsKey), comment]);
   return comment;
 }

@@ -14,7 +14,7 @@ function response(result: EmbedResult) {
 }
 
 function identityHost(host: string) {
-  return /(okta|microsoftonline|auth0|(^|\.)login\.|(^|\.)sso\.)/i.test(host);
+  return /(gitlab\.com|okta|microsoftonline|auth0|(^|\.)login\.|(^|\.)sso\.)/i.test(host);
 }
 
 function getTitle(html: string) {
@@ -81,8 +81,12 @@ Deno.serve(async (request) => {
     const csp = page.headers.get("content-security-policy");
     const allowedByHeaders = xFrameAllows(xFrame, appOrigin, finalOrigin) && cspAllows(csp, appOrigin, finalOrigin);
     const requiresSignIn = final.host !== requestedUrl.host && identityHost(final.host);
-    const embeddable = page.ok && allowedByHeaders && !requiresSignIn;
-    const reason = !page.ok ? `The site returned HTTP ${page.status}.` : requiresSignIn ? "This URL redirected to a sign-in page." : !allowedByHeaders ? "This site prevents embedding in another application." : "The site allows embedding.";
+    // The checker cannot carry the user's SSO cookies, so an unauthenticated
+    // probe may see the identity provider instead of the actual prototype.
+    // Let the browser try the live frame; the viewer still exposes a new-tab
+    // fallback if the provider blocks the iframe.
+    const embeddable = page.ok && (allowedByHeaders || requiresSignIn);
+    const reason = !page.ok ? `The site returned HTTP ${page.status}.` : requiresSignIn ? "This URL requires sign-in. Open it in a new tab to authenticate." : !allowedByHeaders ? "This site prevents embedding in another application." : "The site allows embedding.";
 
     return response({ embeddable, reason, final_url: finalUrl, title: getTitle(html), favicon_url: html ? getFavicon(html, finalUrl) : new URL("/favicon.ico", finalUrl).toString(), requires_sign_in: requiresSignIn });
   } catch (error) {

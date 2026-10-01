@@ -59,6 +59,10 @@ export function getSlackClaims(user: User) {
 }
 
 function friendlyAuthError(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  if (message.includes("rate limit") || message.includes("too many") || message.includes("over_email_send_rate_limit")) {
+    return "Supabase's email sender is temporarily rate-limited. Wait for the delivery limit to reset, or connect a custom SMTP provider for continued testing.";
+  }
   if (error instanceof Error && error.message) return error.message;
   return "We could not send the sign-in link. Please try again.";
 }
@@ -91,12 +95,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
 
     if (profileError || !data) {
-      // The profile trigger rejects users outside the configured Alkami email domain.
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
       setStatus("rejected");
-      setError(`Only ${allowedEmailDomain} email addresses can use this.`);
+      if (!isAllowedEmail(session.user.email ?? "")) {
+        setError(`Only ${allowedEmailDomain} email addresses can use this.`);
+      } else {
+        setError("Your sign-in link worked, but your Alkami profile is not set up in Supabase yet. Apply the email-auth migration, then request a new link.");
+      }
       return;
     }
 

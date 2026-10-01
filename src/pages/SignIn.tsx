@@ -15,16 +15,25 @@ export function SignIn({ theme, onToggleTheme }: { theme: "light" | "dark"; onTo
   const [signingIn, setSigningIn] = useState(false);
   const [email, setEmail] = useState("");
   const [linkSent, setLinkSent] = useState(false);
+  const [retryIn, setRetryIn] = useState(0);
   const setupMessage = "This workspace is not connected to Supabase yet.";
+
+  useEffect(() => {
+    if (retryIn === 0) return;
+    const timer = window.setInterval(() => setRetryIn((value) => Math.max(0, value - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [retryIn]);
 
   useEffect(() => {
     if (status === "signed_in") navigate("/", { replace: true });
   }, [navigate, status]);
 
   async function handleSignIn() {
+    if (retryIn > 0) return;
     setSigningIn(true);
     const sent = await signInWithEmail(email);
     setLinkSent(sent);
+    if (sent) setRetryIn(60);
     setSigningIn(false);
   }
 
@@ -46,8 +55,8 @@ export function SignIn({ theme, onToggleTheme }: { theme: "light" | "dark"; onTo
           {linkSent ? <div className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-950 dark:bg-emerald-950/40 dark:text-emerald-200">Check your {allowedEmailDomain} inbox for a sign-in link. It expires after a short time and can only be used once.</div> : null}
           <label className="mb-2 block text-sm font-medium" htmlFor="sign-in-email">Alkami email</label>
           <input id="sign-in-email" value={email} onChange={(event) => { setEmail(event.target.value); setLinkSent(false); }} placeholder={`you@${allowedEmailDomain}`} type="email" autoComplete="email" className="mb-3 flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring" />
-          <Button className="w-full" size="lg" onClick={() => void handleSignIn()} disabled={signingIn || !supabaseConfigured || !email.trim()}>
-            <Mail className="h-4 w-4" />{signingIn ? "Sending sign-in link…" : "Email me a sign-in link"}
+          <Button className="w-full" size="lg" onClick={() => void handleSignIn()} disabled={signingIn || retryIn > 0 || !supabaseConfigured || !email.trim()}>
+            <Mail className="h-4 w-4" />{signingIn ? "Sending sign-in link…" : retryIn > 0 ? `Try again in ${retryIn}s` : "Email me a sign-in link"}
           </Button>
           <div className="my-6 flex items-center gap-3"><Separator className="flex-1" /><span className="text-xs text-muted-foreground">{allowedEmailDomain} users only</span><Separator className="flex-1" /></div>
           <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />Access is checked against the Alkami email domain before the app loads. Slack identity and notifications can be connected later.</p>
