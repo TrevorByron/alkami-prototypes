@@ -5,6 +5,14 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Console primitives: text-abyss-5, bg-tiaga-0, border-carbon-3, …
+        abyss: Object.fromEntries(Array.from({ length: 10 }, (_, step) => [step, `hsl(var(--color-abyss-${step}))`])),
+        carbon: Object.fromEntries(Array.from({ length: 10 }, (_, step) => [step, `hsl(var(--color-carbon-${step}))`])),
+        marine: Object.fromEntries(Array.from({ length: 10 }, (_, step) => [step, `hsl(var(--color-marine-${step}))`])),
+        tiaga: Object.fromEntries(Array.from({ length: 10 }, (_, step) => [step, `hsl(var(--color-tiaga-${step}))`])),
+        chaparral: Object.fromEntries(Array.from({ length: 10 }, (_, step) => [step, `hsl(var(--color-chaparral-${step}))`])),
+        desert: Object.fromEntries(Array.from({ length: 10 }, (_, step) => [step, `hsl(var(--color-desert-${step}))`])),
+        alpine: Object.fromEntries(Array.from({ length: 10 }, (_, step) => [step, `hsl(var(--color-alpine-${step}))`])),
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

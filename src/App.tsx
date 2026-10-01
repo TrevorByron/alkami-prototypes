@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AddPrototypeDialog } from "@/components/AddPrototypeDialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserIdentity";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
 import { usePrototypes } from "@/hooks/usePrototypes";
 import { isDemoMode } from "@/lib/demoMode";
+import { displayName } from "@/lib/names";
 import type { PrototypeSummary } from "@/lib/types";
 import { SignIn } from "@/pages/SignIn";
 import { ViewerPage } from "@/pages/ViewerPage";
@@ -41,8 +42,7 @@ function AppMark() {
 function TopBar({ viewer = false }: { viewer?: boolean }) {
   const navigate = useNavigate();
   const { profile, user, signOut } = useAuth();
-  const displayName = profile?.name ?? user?.email ?? "Slack member";
-  const initials = displayName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const me = profile?.name ?? user?.email ?? "Member";
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card/85 px-5 backdrop-blur md:px-8">
@@ -57,7 +57,7 @@ function TopBar({ viewer = false }: { viewer?: boolean }) {
       </div>
       <div className="flex items-center gap-2">
         <Button variant="ghost" className="hidden text-muted-foreground sm:flex" onClick={() => void signOut()}>Sign out</Button>
-        <Avatar className="ml-1 h-8 w-8 border border-border"><AvatarFallback className="bg-indigo-100 text-indigo-700">{initials}</AvatarFallback></Avatar>
+        <UserAvatar id={user?.id} name={me} src={profile?.avatar_url} className="ml-1" />
       </div>
     </header>
   );
@@ -107,7 +107,6 @@ function Library() {
 
 function PrototypeCard({ prototype, onDelete }: { prototype: PrototypeSummary; onDelete: (id: string) => Promise<string | null> }) {
   const host = (() => { try { return new URL(prototype.url).host; } catch { return prototype.url; } })();
-  const initials = prototype.owner_name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -142,7 +141,7 @@ function PrototypeCard({ prototype, onDelete }: { prototype: PrototypeSummary; o
         <CardContent>
           {prototype.description ? <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">{prototype.description}</p> : null}
           <div className="flex items-center justify-between border-t pt-4 text-sm">
-            <div className="flex min-w-0 items-center gap-2 text-muted-foreground"><Avatar className="h-7 w-7"><AvatarFallback className="bg-secondary text-[10px]">{initials}</AvatarFallback></Avatar><span className="truncate">Built by {prototype.owner_name}</span></div>
+            <div className="flex min-w-0 items-center gap-2 text-muted-foreground"><UserAvatar id={prototype.owner_id} name={prototype.owner_name} /><span className="truncate">Built by {displayName(prototype.owner_name)}</span></div>
             <div className="flex shrink-0 items-center gap-2"><Badge variant={prototype.open_comment_count ? "default" : "muted"} className="gap-1" aria-label={`${prototype.open_comment_count} open comments`}><MessageSquare className="h-3 w-3" />{prototype.open_comment_count}</Badge>{prototype.embed_mode === "new_tab" && <Badge variant="outline">New tab only</Badge>}</div>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">Updated {formatRelativeTime(prototype.updated_at)}</p>

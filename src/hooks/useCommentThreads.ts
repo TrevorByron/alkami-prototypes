@@ -27,7 +27,7 @@ export function useCommentThreads(prototypeId: string | undefined) {
     const [commentsResult, repliesResult, profilesResult] = await Promise.all([
       supabase.from("comments").select("*").eq("prototype_id", prototypeId).order("created_at", { ascending: true }),
       supabase.from("replies").select("*").order("created_at", { ascending: true }),
-      supabase.from("profiles").select("id, name, avatar_url"),
+      supabase.from("profiles").select("id, name, avatar_url, email"),
     ]);
     const queryError = commentsResult.error ?? repliesResult.error ?? profilesResult.error;
     if (queryError) {

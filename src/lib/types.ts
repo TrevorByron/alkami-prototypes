@@ -51,6 +51,7 @@ export type CommentAuthor = {
   id: string;
   name: string;
   avatar_url: string | null;
+  email?: string | null;
 };
 
 export type ReplyRecord = {
