@@ -129,9 +129,7 @@ function PrototypeCard({ prototype, onDelete }: { prototype: PrototypeSummary; o
       <Link to={`/p/${prototype.id}`} className="group block">
         <div className="h-2 bg-gradient-to-r from-indigo-500 to-violet-500" />
         <div className="relative h-36 overflow-hidden border-b bg-muted">
-          {prototype.embed_mode === "live" ? <div className="pointer-events-none absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.3] bg-white"><iframe title={`${prototype.name} preview`} src={prototype.url} loading="lazy" tabIndex={-1} className="h-full w-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads" /></div> : null}
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/65 via-slate-950/5 to-transparent" />
-          <div className="absolute inset-x-4 bottom-3 flex items-end justify-between gap-3 text-white"><div className="flex min-w-0 items-center gap-2"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/15 backdrop-blur">{prototype.favicon_url ? <img src={prototype.favicon_url} alt="" className="h-4 w-4" /> : <span className="text-xs font-semibold">{host.slice(0, 1).toUpperCase()}</span>}</div><span className="truncate text-xs font-medium">{prototype.embed_mode === "live" ? "Live preview" : "Opens in a new tab"}</span></div><ArrowUpRight className="h-4 w-4 shrink-0" /></div>
+          {prototype.embed_mode === "live" ? <div className="pointer-events-none absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.3] bg-white"><iframe title={`${prototype.name} preview`} src={prototype.url} loading="lazy" tabIndex={-1} className="h-full w-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads" /></div> : <div className="flex h-full items-center justify-center text-xs text-muted-foreground">Opens in a new tab</div>}
         </div>
         <CardHeader className="pb-4">
           <div className="flex items-start justify-between gap-4">
