@@ -35,6 +35,14 @@ export function useCommentThreads(prototypeId: string | undefined) {
       setLoading(false);
       return;
     }
+    // Upvotes are optional: if the comment_upvotes migration hasn't been
+    // applied yet, comments still load with zero votes.
+    const commentIds = (commentsResult.data ?? []).map((comment) => comment.id as string);
+    const upvotesResult = commentIds.length ? await supabase.from("comment_upvotes").select("comment_id, user_id").in("comment_id", commentIds) : { data: [] };
+    const upvotersByComment = new Map<string, string[]>();
+    for (const upvote of (upvotesResult.data ?? []) as Array<{ comment_id: string; user_id: string }>) {
+      upvotersByComment.set(upvote.comment_id, [...(upvotersByComment.get(upvote.comment_id) ?? []), upvote.user_id]);
+    }
     const authors = new Map<string, CommentAuthor>((profilesResult.data ?? []).map((profile) => [profile.id, profile as CommentAuthor]));
     const repliesByComment = new Map<string, ReplyRecord[]>();
     for (const reply of (repliesResult.data ?? []) as ReplyRecord[]) {
@@ -43,7 +51,7 @@ export function useCommentThreads(prototypeId: string | undefined) {
     }
     const next = (commentsResult.data ?? []).map((comment) => {
       const row = comment as CommentRecord;
-      return { ...row, author: authors.get(row.author_id), replies: repliesByComment.get(row.id) ?? [] };
+      return { ...row, author: authors.get(row.author_id), replies: repliesByComment.get(row.id) ?? [], upvoters: upvotersByComment.get(row.id) ?? [] };
     });
     setComments(next);
     setError(null);
@@ -56,6 +64,7 @@ export function useCommentThreads(prototypeId: string | undefined) {
     const channel = supabase.channel(`prototype-comments-${prototypeId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "comments", filter: `prototype_id=eq.${prototypeId}` }, () => void load())
       .on("postgres_changes", { event: "*", schema: "public", table: "replies" }, () => void load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "comment_upvotes" }, () => void load())
       .subscribe();
     return () => { if (supabase) void supabase.removeChannel(channel); };
   }, [load, prototypeId]);

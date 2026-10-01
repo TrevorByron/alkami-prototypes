@@ -3,6 +3,9 @@ import type { CommentAuthor, CommentRecord, PrototypeSummary, ReplyRecord, Slack
 const prototypesKey = "commentor:demo:prototypes";
 const commentsKey = "commentor:demo:comments";
 const repliesKey = "commentor:demo:replies";
+const upvotesKey = "commentor:demo:upvotes";
+
+type DemoUpvote = { comment_id: string; user_id: string };
 
 export const demoProfile: CommentAuthor & { slack_user_id: string; team_id: string; auth_provider: "email"; email: string } = {
   id: "demo-user",
@@ -65,12 +68,13 @@ function author(): CommentAuthor { return demoProfile; }
 
 export function listDemoComments(prototypeId: string) {
   const replies = read<ReplyRecord>(repliesKey);
+  const upvotes = read<DemoUpvote>(upvotesKey);
   const prototypeUrl = getDemoPrototype(prototypeId)?.url ?? null;
-  return read<CommentRecord>(commentsKey).filter((comment) => comment.prototype_id === prototypeId).map((comment) => ({ ...comment, page_url: "page_url" in comment ? comment.page_url : prototypeUrl, author: author(), replies: replies.filter((reply) => reply.comment_id === comment.id).map((reply) => ({ ...reply, author: author() })) }));
+  return read<CommentRecord>(commentsKey).filter((comment) => comment.prototype_id === prototypeId).map((comment) => ({ ...comment, page_url: "page_url" in comment ? comment.page_url : prototypeUrl, author: author(), replies: replies.filter((reply) => reply.comment_id === comment.id).map((reply) => ({ ...reply, author: author() })), upvoters: upvotes.filter((upvote) => upvote.comment_id === comment.id).map((upvote) => upvote.user_id) }));
 }
 
 export function addDemoComment(input: { prototype_id: string; body: string; page_url: string | null; screen_label: string | null; viewport: Viewport | null; x_pct: number | null; y_pct: number | null; selector: string | null; scroll_y: number | null; snapshot_url: string | null; }) {
-  const comment: CommentRecord = { id: crypto.randomUUID(), ...input, author_id: demoProfile.id, status: "open", slack_ts: null, resolved_by: null, resolved_at: null, resolution_note: null, created_at: now(), author: author(), replies: [] };
+  const comment: CommentRecord = { id: crypto.randomUUID(), ...input, author_id: demoProfile.id, status: "open", slack_ts: null, resolved_by: null, resolved_at: null, resolution_note: null, created_at: now(), author: author(), replies: [], upvoters: [] };
   write(commentsKey, [...read<CommentRecord>(commentsKey), comment]);
   return comment;
 }
@@ -86,8 +90,14 @@ export function updateDemoComment(id: string, values: { status: "open" | "resolv
   write(commentsKey, next);
 }
 
+export function toggleDemoUpvote(commentId: string) {
+  const upvotes = read<DemoUpvote>(upvotesKey);
+  const mine = (upvote: DemoUpvote) => upvote.comment_id === commentId && upvote.user_id === demoProfile.id;
+  write(upvotesKey, upvotes.some(mine) ? upvotes.filter((upvote) => !mine(upvote)) : [...upvotes, { comment_id: commentId, user_id: demoProfile.id }]);
+}
+
 export function clearDemoData() {
-  [prototypesKey, commentsKey, repliesKey].forEach((key) => window.localStorage.removeItem(key));
+  [prototypesKey, commentsKey, repliesKey, upvotesKey].forEach((key) => window.localStorage.removeItem(key));
 }
 
 export function isDemoUser(userId: string) { return userId === demoProfile.id; }

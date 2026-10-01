@@ -84,4 +84,6 @@ export type CommentRecord = {
   created_at: string;
   author?: CommentAuthor;
   replies: ReplyRecord[];
+  /** Profile ids of the members who upvoted this comment. */
+  upvoters: string[];
 };
