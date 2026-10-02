@@ -149,7 +149,7 @@ function PrototypeCard({ prototype, onDelete }: { prototype: PrototypeSummary; o
           {prototype.description ? <p className="mb-2 line-clamp-2 text-sm text-abyss-7">{prototype.description}</p> : null}
           <div className="mt-2 flex items-center justify-between gap-2 border-t border-carbon-3 pt-4">
             <div className="flex min-w-0 items-center gap-2"><UserAvatar id={prototype.owner_id} name={prototype.owner_name} /><div className="min-w-0"><p className="truncate text-sm font-medium text-abyss-9">{displayName(prototype.owner_name)}</p><p className="text-xs text-abyss-5">Updated {formatRelativeTime(prototype.updated_at)}</p></div></div>
-            <div className="flex shrink-0 items-center gap-2"><Badge variant={prototype.open_comment_count ? "default" : "muted"} aria-label={`${prototype.open_comment_count} open comments`}><MessageSquare />{prototype.open_comment_count}</Badge>{claude ? <Badge variant="warning">Claude artifact</Badge> : prototype.embed_mode === "new_tab" && <Badge variant="muted">New tab only</Badge>}</div>
+            <div className="flex shrink-0 items-center gap-2"><Badge variant={prototype.open_comment_count ? "default" : "muted"} aria-label={`${prototype.open_comment_count} open comments`}><MessageSquare />{prototype.open_comment_count}</Badge>{claude ? <Badge className="bg-claude-sand text-claude-ink">Claude artifact</Badge> : prototype.embed_mode === "new_tab" && <Badge variant="muted">New tab only</Badge>}</div>
           </div>
         </div>
       </Link>
@@ -168,14 +168,14 @@ function PrototypeCard({ prototype, onDelete }: { prototype: PrototypeSummary; o
 // shows a stylised artifact window that opens the real thing on claude.ai.
 function ClaudePreview({ url, access }: { url: string; access: "public" | "invited" }) {
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" className="group/claude relative block h-36 overflow-hidden border-b border-carbon-3 bg-gradient-to-br from-desert-0 via-abyss-0 to-desert-1 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-marine-2" aria-label="Open the Claude artifact on claude.ai in a new tab">
-      <div className="absolute inset-x-6 top-5 rounded-lg border border-desert-2 bg-abyss-0 shadow-tropo transition-transform duration-200 group-hover/claude:-translate-y-0.5" aria-hidden>
-        <div className="flex items-center gap-1 border-b border-desert-1 px-3 py-2"><span className="h-1.5 w-1.5 rounded-full bg-desert-3" /><span className="h-1.5 w-1.5 rounded-full bg-desert-3" /><span className="h-1.5 w-1.5 rounded-full bg-desert-3" /><span className="ml-2 h-1.5 w-20 rounded-full bg-desert-1" /></div>
-        <div className="space-y-2 px-3 py-3"><span className="block h-2 w-2/3 rounded-full bg-carbon-2" /><span className="block h-2 w-1/2 rounded-full bg-carbon-1" /><span className="block h-2 w-3/4 rounded-full bg-carbon-1" /></div>
+    <a href={url} target="_blank" rel="noopener noreferrer" className="group/claude relative block h-36 overflow-hidden border-b border-carbon-3 bg-gradient-to-br from-claude-cream via-claude-cream to-claude-sand focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-marine-2" aria-label="Open the Claude artifact on claude.ai in a new tab">
+      <div className="absolute inset-x-6 top-5 rounded-lg border border-claude-border bg-abyss-0 shadow-tropo transition-transform duration-200 group-hover/claude:-translate-y-0.5" aria-hidden>
+        <div className="flex items-center gap-2 border-b border-claude-border px-3 py-2"><ClaudeMark className="h-4 w-4 !rounded" /><span className="h-1.5 w-20 rounded-full bg-claude-sand" /></div>
+        <div className="space-y-2 px-3 py-3"><span className="block h-2 w-2/3 rounded-full bg-claude/30" /><span className="block h-2 w-1/2 rounded-full bg-claude-sand" /><span className="block h-2 w-3/4 rounded-full bg-claude-sand" /></div>
       </div>
-      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-abyss-0 via-abyss-0/95 to-transparent px-6 pb-3 pt-6">
-        <span className="flex items-center gap-1 text-xs text-abyss-7">{access === "public" ? <Globe className="h-4 w-4 text-abyss-5" /> : <LockKeyhole className="h-4 w-4 text-abyss-5" />}{access === "public" ? "Anyone with the link" : "Needs Claude access"}</span>
-        <span className="inline-flex min-h-8 items-center gap-1 rounded-lg border-2 border-carbon-3 bg-abyss-0 px-3 text-xs font-medium text-abyss-9 transition-colors group-hover/claude:border-marine-5 group-hover/claude:text-marine-5">Opens in a new tab<ExternalLink className="h-4 w-4" /></span>
+      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-claude-cream via-claude-cream/95 to-transparent px-6 pb-3 pt-6">
+        <span className="flex items-center gap-1 text-xs text-claude-ink">{access === "public" ? <Globe className="h-4 w-4" /> : <LockKeyhole className="h-4 w-4" />}{access === "public" ? "Anyone with the link" : "Needs Claude access"}</span>
+        <span className="inline-flex min-h-8 items-center gap-1 rounded-lg bg-claude px-3 text-xs font-medium text-abyss-0 transition-colors group-hover/claude:bg-claude-dark">Opens in a new tab<ExternalLink className="h-4 w-4" /></span>
       </div>
     </a>
   );
