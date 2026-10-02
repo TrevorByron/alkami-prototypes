@@ -52,7 +52,10 @@ export function SignIn() {
         <div className="mt-6 space-y-4">
           {!supabaseConfigured ? <InfoBanner type="warning">{setupMessage}</InfoBanner> : null}
           {error ? <InfoBanner type="danger">{error}</InfoBanner> : null}
-          {linkSent ? <InfoBanner type="success" title="Check your inbox">We sent a sign-in link to your {allowedEmailDomain} email. It expires after a short time and can only be used once.</InfoBanner> : null}
+          {linkSent ? <InfoBanner type="success" title="Check your email">
+            <p>We sent a sign-in link to <span className="font-medium">{email.trim().toLowerCase()}</span>. It expires after a short time and can only be used once.</p>
+            <p className="mt-2 font-medium">Don’t see it? Check your spam or junk folder. If it’s there, mark it as “Not spam” so future sign-in emails reach your inbox.</p>
+          </InfoBanner> : null}
           <div className="space-y-2">
             <Label htmlFor="sign-in-email">Alkami email</Label>
             <Input id="sign-in-email" value={email} onChange={(event) => { setEmail(event.target.value); setLinkSent(false); }} onKeyDown={(event) => { if (event.key === "Enter") void handleSignIn(); }} placeholder={`you@${allowedEmailDomain}`} type="email" autoComplete="email" />

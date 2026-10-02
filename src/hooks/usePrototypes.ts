@@ -91,6 +91,11 @@ export function usePrototypes() {
     void load();
   }, [load]);
 
+  // Apply a saved change to one prototype without reloading the whole list.
+  const patch = useCallback((id: string, fields: Partial<PrototypeSummary>) => {
+    setPrototypes((current) => current.map((prototype) => prototype.id === id ? { ...prototype, ...fields } : prototype));
+  }, []);
+
   const remove = useCallback(async (id: string): Promise<string | null> => {
     if (isDemoMode) {
       deleteDemoPrototype(id);
@@ -104,5 +109,5 @@ export function usePrototypes() {
     return null;
   }, [load, user]);
 
-  return { prototypes, loading, error, refresh: load, remove };
+  return { prototypes, loading, error, refresh: load, remove, patch };
 }

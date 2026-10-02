@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Route, Routes } from "react-router-dom";
-import { ArrowUpRight, ExternalLink, Globe, LayoutGrid, Loader2, LockKeyhole, MessageSquare, Plus, RotateCcw, Search, Trash2, Users } from "lucide-react";
+import { ArrowUpRight, ExternalLink, Globe, Hammer, Tag, LayoutGrid, Loader2, LockKeyhole, MessageSquare, Plus, RotateCcw, Search, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -8,16 +8,20 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AddPrototypeDialog } from "@/components/AddPrototypeDialog";
 import { AppMark } from "@/components/AppMark";
 import { ClaudeMark } from "@/components/ClaudeMark";
-import { UserAvatar } from "@/components/UserIdentity";
+import { HowItWorks } from "@/components/HowItWorks";
+import { TagEditor } from "@/components/TagEditor";
+import { UserAvatar, UserIdentity } from "@/components/UserIdentity";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SelectionPill } from "@/components/ui/selection-pill";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
+import { type Contributor, useContributors } from "@/hooks/useContributors";
 import { usePrototypes } from "@/hooks/usePrototypes";
 import { isDemoMode } from "@/lib/demoMode";
 import { claudeArtifact } from "@/lib/claude";
@@ -55,6 +59,7 @@ function TopBar() {
         <span className="text-sm text-abyss-5">Team prototype library</span>
       </div>
       <div className="flex items-center gap-2">
+        <HowItWorks />
         <Button variant="ghost" className="hidden sm:inline-flex" onClick={() => void signOut()}>Sign out</Button>
         <UserAvatar id={user?.id} name={me} src={profile?.avatar_url} />
       </div>
@@ -66,14 +71,14 @@ function Library() {
   const [query, setQuery] = useState("");
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [addOpen, setAddOpen] = useState(false);
-  const { prototypes, loading, error, refresh, remove } = usePrototypes();
+  const { prototypes, loading, error, refresh, remove, patch } = usePrototypes();
   const matchesQuery = (prototype: PrototypeSummary) => `${prototype.name} ${prototype.url} ${prototype.owner_name} ${prototype.tags.map((id) => tagInfo(id)?.label ?? "").join(" ")}`.toLowerCase().includes(query.toLowerCase());
   // Selecting several tags shows prototypes that have any of them.
   const visible = prototypes.filter((prototype) => matchesQuery(prototype) && (!tagFilter.length || prototype.tags.some((id) => tagFilter.includes(id))));
   const tagCounts = new Map(prototypeTags.map((tag) => [tag.id, prototypes.filter((prototype) => matchesQuery(prototype) && prototype.tags.includes(tag.id)).length]));
   const filtering = Boolean(query || tagFilter.length);
-  const openConversations = openConversationCount(prototypes);
-  const contributors = contributorCount(prototypes);
+  const contributors = useContributors();
+  const builders = builderCount(prototypes);
 
   return (
     <div className="min-h-screen bg-carbon-0">
@@ -90,8 +95,8 @@ function Library() {
 
         <div className="mb-6 grid gap-4 sm:grid-cols-3">
           <StatCard icon={<LayoutGrid />} tone="marine" label="Shared library" value={prototypes.length} unit={prototypes.length === 1 ? "prototype" : "prototypes"} />
-          <StatCard icon={<MessageSquare />} tone="desert" label="Open conversations" value={openConversations} unit={openConversations === 1 ? "thread waiting for feedback" : "threads waiting for feedback"} />
-          <StatCard icon={<Users />} tone="tiaga" label="Team contributors" value={contributors} unit={contributors === 1 ? "builder" : "builders"} />
+          <ContributorsCard contributors={contributors} />
+          <StatCard icon={<Hammer />} tone="tiaga" label="Builders" value={builders} unit={builders === 1 ? "person sharing prototypes" : "people sharing prototypes"} />
         </div>
 
         <div className="mb-6 space-y-4">
@@ -109,7 +114,7 @@ function Library() {
           </div>
         </div>
 
-        {loading ? <SkeletonGrid /> : error ? <LibraryError message={error} onRetry={() => void refresh()} /> : visible.length ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visible.map((prototype) => <PrototypeCard key={prototype.id} prototype={prototype} onDelete={remove} />)}</div> : filtering ? <EmptySearch /> : <EmptyLibrary onAdd={() => setAddOpen(true)} />}
+        {loading ? <SkeletonGrid /> : error ? <LibraryError message={error} onRetry={() => void refresh()} /> : visible.length ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visible.map((prototype) => <PrototypeCard key={prototype.id} prototype={prototype} onDelete={remove} onTagsChange={(tags) => patch(prototype.id, { tags })} />)}</div> : filtering ? <EmptySearch /> : <EmptyLibrary onAdd={() => setAddOpen(true)} />}
       </main>
       <AddPrototypeDialog open={addOpen} onOpenChange={setAddOpen} onCreated={() => void refresh()} />
     </div>
@@ -126,7 +131,25 @@ function StatCard({ icon, tone, label, value, unit }: { icon: React.ReactNode; t
   return <Card className="flex items-center gap-4 px-6 py-4"><div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg [&_svg]:h-5 [&_svg]:w-5 ${statTones[tone]}`}>{icon}</div><div className="min-w-0"><p className="text-xs text-abyss-5">{label}</p><p className="truncate text-sm text-abyss-7"><span className="text-xl font-medium leading-6 text-abyss-9">{value}</span> {unit}</p></div></Card>;
 }
 
-function PrototypeCard({ prototype, onDelete }: { prototype: PrototypeSummary; onDelete: (id: string) => Promise<string | null> }) {
+// Looks exactly like the other stat cards (no hover state) on purpose: clicking
+// it is a small easter egg that lists everyone who has signed in.
+function ContributorsCard({ contributors }: { contributors: Contributor[] }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button type="button" className="cursor-default rounded-lg text-left focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marine-2" aria-label={`${contributors.length} contributors. Show who has signed in`}>
+          <StatCard icon={<Users />} tone="desert" label="Contributors" value={contributors.length} unit={contributors.length === 1 ? "person has signed in" : "people have signed in"} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="center" className="w-80 p-0">
+        <div className="border-b border-carbon-3 px-4 py-3"><p className="text-sm font-medium text-abyss-9">Everyone who’s signed in</p><p className="text-xs text-abyss-5">{contributors.length} {contributors.length === 1 ? "person has" : "people have"} explored the library</p></div>
+        <ul className="max-h-80 divide-y divide-carbon-2 overflow-y-auto">{contributors.map((person) => <li key={person.id} className="px-4 py-2"><UserIdentity id={person.id} name={person.name} src={person.avatar_url} email={person.email} /></li>)}</ul>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function PrototypeCard({ prototype, onDelete, onTagsChange }: { prototype: PrototypeSummary; onDelete: (id: string) => Promise<string | null>; onTagsChange: (tags: string[]) => void }) {
   const host = (() => { try { return new URL(prototype.url).host; } catch { return prototype.url; } })();
   const claude = claudeArtifact(prototype.url);
   const [faviconFailed, setFaviconFailed] = useState(false);
@@ -169,6 +192,7 @@ function PrototypeCard({ prototype, onDelete }: { prototype: PrototypeSummary; o
         </div>
       </Link>
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <div className="absolute right-14 top-4 z-20"><TagEditor prototypeId={prototype.id} tags={prototype.tags} onChange={onTagsChange} trigger={<Button type="button" variant="secondary" size="icon" aria-label={`Edit tags for ${prototype.name}`} title="Edit tags"><Tag /></Button>} /></div>
         <DialogTrigger asChild><Button type="button" variant="secondary" size="icon" className="absolute right-4 top-4 z-20 hover:border-chaparral-5 hover:bg-chaparral-0 hover:text-chaparral-5" aria-label={`Delete ${prototype.name}`}><Trash2 /></Button></DialogTrigger>
         <DialogContent>
           <DialogHeader><DialogTitle>Delete this prototype?</DialogTitle><DialogDescription>This will remove <span className="font-medium text-abyss-9">{prototype.name}</span> from the shared library and delete its comments and replies. This cannot be undone.</DialogDescription></DialogHeader>
@@ -226,11 +250,7 @@ function formatRelativeTime(value: string) {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
-function openConversationCount(prototypes: PrototypeSummary[]) {
-  return prototypes.reduce((total, prototype) => total + prototype.open_comment_count, 0);
-}
-
-function contributorCount(prototypes: PrototypeSummary[]) {
+function builderCount(prototypes: PrototypeSummary[]) {
   return new Set(prototypes.map((prototype) => prototype.owner_id ?? prototype.created_by ?? prototype.owner_slack_id).filter(Boolean)).size;
 }
 
