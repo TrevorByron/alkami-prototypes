@@ -1,6 +1,6 @@
 import { type DragEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CalendarDays, Check, ChevronDown, ExternalLink, Info, Loader2, LockKeyhole, MessageCircleMore, MessageSquare, Monitor, PanelRight, Paperclip, RotateCcw, Send, Smartphone, ThumbsUp, TrendingUp, MoreVertical, Tablet, X } from "lucide-react";
+import { ArrowLeft, CalendarDays, Check, ChevronDown, ExternalLink, Info, Loader2, LockKeyhole, Maximize2, MessageCircleMore, MessageSquare, Monitor, PanelRight, Paperclip, RotateCcw, Send, Smartphone, ThumbsUp, TrendingUp, MoreVertical, Tablet, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ConsoleBadge } from "@/components/ui/console-badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AppMark } from "@/components/AppMark";
+import { ImageLightbox } from "@/components/ImageLightbox";
 import { UserAvatar, UserIdentity } from "@/components/UserIdentity";
 import { displayName } from "@/lib/names";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -302,7 +303,9 @@ function CommentCard({ comment, onRefresh }: { comment: CommentRecord; onRefresh
     </div>
     <div className="pl-10">
       <p className="mt-2 whitespace-pre-wrap text-sm text-abyss-7">{comment.body}</p>
-      {snapshotUrl ? <div className="mt-2 overflow-hidden rounded-lg border border-carbon-3 bg-carbon-0"><img src={snapshotUrl} alt="Attached comment image" className="block max-h-56 w-full object-contain" /></div> : null}
+      {snapshotUrl ? <ImageLightbox src={snapshotUrl} alt={`Image from ${displayName(authorName)}’s comment`} authorId={comment.author_id} authorName={authorName} meta={formatDate(comment.created_at)}>
+        <button type="button" className="group relative mt-2 block w-full cursor-zoom-in overflow-hidden rounded-lg border border-carbon-3 bg-carbon-0 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marine-2" aria-label="View image full screen"><img src={snapshotUrl} alt="Attached comment image" className="block max-h-56 w-full object-contain" /><span className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-lg bg-abyss-0/90 text-abyss-7 opacity-0 shadow-tropo transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"><Maximize2 className="h-4 w-4" /></span></button>
+      </ImageLightbox> : null}
       {comment.status === "resolved" && comment.resolution_note ? <p className="mt-2 rounded bg-carbon-0 px-2 py-1 text-xs text-abyss-5">Resolved: {comment.resolution_note}</p> : null}
       <div className="-ml-2 mt-2 flex items-center gap-1">
         <button type="button" className={`flex h-8 items-center gap-1 rounded-lg px-2 text-xs font-medium transition-colors hover:bg-carbon-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marine-2 ${upvoted ? "text-marine-5" : "text-abyss-7"}`} aria-pressed={upvoted} aria-label={upvoted ? "Remove upvote" : "Upvote"} onClick={() => void toggleUpvote()}><ThumbsUp className={`h-4 w-4 ${upvoted ? "fill-marine-0" : ""}`} />{upvoters.length}</button>
