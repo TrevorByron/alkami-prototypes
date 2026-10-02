@@ -13,6 +13,8 @@ export type PrototypeSummary = {
   embed_mode: EmbedMode;
   embed_reason: string | null;
   favicon_url: string | null;
+  /** Category ids from src/lib/tags.ts. */
+  tags: string[];
   created_by: string;
   created_at: string;
   updated_at: string;

@@ -39,14 +39,14 @@ function write<T>(key: string, value: T[]) {
 function now() { return new Date().toISOString(); }
 
 export function listDemoPrototypes() {
-  return read<PrototypeSummary>(prototypesKey).map((prototype) => ({ ...prototype, open_comment_count: countOpenComments(prototype.id) }));
+  return read<PrototypeSummary>(prototypesKey).map((prototype) => ({ ...prototype, tags: prototype.tags ?? [], open_comment_count: countOpenComments(prototype.id) }));
 }
 
 export function getDemoPrototype(id: string) {
   return listDemoPrototypes().find((prototype) => prototype.id === id) ?? null;
 }
 
-export function createDemoPrototype(input: { name: string; url: string; description: string | null; owner_id: string; owner_slack_id: string | null; owner_name: string; slack_channel_id: string | null; slack_channel_name: string | null; embed_mode: "live" | "new_tab"; embed_reason: string; favicon_url: string | null; }) {
+export function createDemoPrototype(input: { name: string; url: string; description: string | null; owner_id: string; owner_slack_id: string | null; owner_name: string; slack_channel_id: string | null; slack_channel_name: string | null; embed_mode: "live" | "new_tab"; embed_reason: string; favicon_url: string | null; tags: string[]; }) {
   const timestamp = now();
   const prototype: PrototypeSummary = { id: crypto.randomUUID(), ...input, created_by: demoProfile.id, created_at: timestamp, updated_at: timestamp, open_comment_count: 0 };
   write(prototypesKey, [...read<PrototypeSummary>(prototypesKey), prototype]);

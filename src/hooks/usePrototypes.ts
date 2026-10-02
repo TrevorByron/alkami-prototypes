@@ -24,13 +24,13 @@ export function usePrototype(id: string | undefined) {
       return;
     }
     setLoading(true);
-    const { data, error: queryError } = await supabase.from("prototypes").select("id, name, url, description, owner_id, owner_slack_id, owner_name, slack_channel_id, slack_channel_name, embed_mode, embed_reason, favicon_url, created_by, created_at, updated_at").eq("id", id).maybeSingle();
+    const { data, error: queryError } = await supabase.from("prototypes").select("*").eq("id", id).maybeSingle();
     if (queryError || !data) {
       setError(queryError?.message ?? "Prototype not found.");
       setLoading(false);
       return;
     }
-    setPrototype({ ...(data as PrototypeSummary), open_comment_count: 0 });
+    setPrototype({ ...(data as PrototypeSummary), tags: (data as PrototypeSummary).tags ?? [], open_comment_count: 0 });
     setError(null);
     setLoading(false);
   }, [id, user]);
@@ -63,7 +63,7 @@ export function usePrototypes() {
     const [prototypeResult, commentsResult] = await Promise.all([
       supabase
         .from("prototypes")
-        .select("id, name, url, description, owner_id, owner_slack_id, owner_name, slack_channel_id, slack_channel_name, embed_mode, embed_reason, favicon_url, created_by, created_at, updated_at")
+        .select("*")
         .order("updated_at", { ascending: false }),
       supabase.from("comments").select("prototype_id").eq("status", "open"),
     ]);
@@ -80,7 +80,7 @@ export function usePrototypes() {
     }
     const next = (prototypeResult.data ?? []).map((prototype) => {
       const row = prototype as PrototypeSummary;
-      return { ...row, open_comment_count: openComments.get(row.id) ?? 0 };
+      return { ...row, tags: row.tags ?? [], open_comment_count: openComments.get(row.id) ?? 0 };
     });
     setPrototypes(next);
     setError(null);

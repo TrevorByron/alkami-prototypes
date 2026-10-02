@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SelectionPill } from "@/components/ui/selection-pill";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
@@ -21,6 +22,7 @@ import { usePrototypes } from "@/hooks/usePrototypes";
 import { isDemoMode } from "@/lib/demoMode";
 import { claudeArtifact } from "@/lib/claude";
 import { displayName } from "@/lib/names";
+import { prototypeTags, tagInfo } from "@/lib/tags";
 import type { PrototypeSummary } from "@/lib/types";
 import { SignIn } from "@/pages/SignIn";
 import { ViewerPage } from "@/pages/ViewerPage";
@@ -62,9 +64,14 @@ function TopBar() {
 
 function Library() {
   const [query, setQuery] = useState("");
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const { prototypes, loading, error, refresh, remove } = usePrototypes();
-  const visible = prototypes.filter((prototype) => `${prototype.name} ${prototype.url} ${prototype.owner_name}`.toLowerCase().includes(query.toLowerCase()));
+  const matchesQuery = (prototype: PrototypeSummary) => `${prototype.name} ${prototype.url} ${prototype.owner_name} ${prototype.tags.map((id) => tagInfo(id)?.label ?? "").join(" ")}`.toLowerCase().includes(query.toLowerCase());
+  // Selecting several tags shows prototypes that have any of them.
+  const visible = prototypes.filter((prototype) => matchesQuery(prototype) && (!tagFilter.length || prototype.tags.some((id) => tagFilter.includes(id))));
+  const tagCounts = new Map(prototypeTags.map((tag) => [tag.id, prototypes.filter((prototype) => matchesQuery(prototype) && prototype.tags.includes(tag.id)).length]));
+  const filtering = Boolean(query || tagFilter.length);
   const openConversations = openConversationCount(prototypes);
   const contributors = contributorCount(prototypes);
 
@@ -87,15 +94,22 @@ function Library() {
           <StatCard icon={<Users />} tone="tiaga" label="Team contributors" value={contributors} unit={contributors === 1 ? "builder" : "builders"} />
         </div>
 
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-abyss-5" />
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search prototypes" className="pl-10" aria-label="Search prototypes" />
+        <div className="mb-6 space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-abyss-5" />
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search prototypes" className="pl-10" aria-label="Search prototypes" />
+            </div>
+            <span className="text-xs text-abyss-5">{visible.length} of {prototypes.length} prototypes</span>
           </div>
-          <span className="text-xs text-abyss-5">{visible.length} of {prototypes.length} prototypes</span>
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by tag">
+            <SelectionPill selected={!tagFilter.length} onClick={() => setTagFilter([])}>All</SelectionPill>
+            {prototypeTags.map((tag) => { const selected = tagFilter.includes(tag.id); return <SelectionPill key={tag.id} selected={selected} title={tag.hint} onClick={() => setTagFilter((current) => selected ? current.filter((id) => id !== tag.id) : [...current, tag.id])}><span aria-hidden>{tag.emoji}</span>{tag.label}<span className={selected ? "text-marine-5" : "text-abyss-5"}>{tagCounts.get(tag.id)}</span></SelectionPill>; })}
+            {filtering ? <Button variant="ghost" onClick={() => { setQuery(""); setTagFilter([]); }}>Clear filters</Button> : null}
+          </div>
         </div>
 
-        {loading ? <SkeletonGrid /> : error ? <LibraryError message={error} onRetry={() => void refresh()} /> : visible.length ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visible.map((prototype) => <PrototypeCard key={prototype.id} prototype={prototype} onDelete={remove} />)}</div> : query ? <EmptySearch /> : <EmptyLibrary onAdd={() => setAddOpen(true)} />}
+        {loading ? <SkeletonGrid /> : error ? <LibraryError message={error} onRetry={() => void refresh()} /> : visible.length ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visible.map((prototype) => <PrototypeCard key={prototype.id} prototype={prototype} onDelete={remove} />)}</div> : filtering ? <EmptySearch /> : <EmptyLibrary onAdd={() => setAddOpen(true)} />}
       </main>
       <AddPrototypeDialog open={addOpen} onOpenChange={setAddOpen} onCreated={() => void refresh()} />
     </div>
@@ -147,6 +161,7 @@ function PrototypeCard({ prototype, onDelete }: { prototype: PrototypeSummary; o
         </div>
         <div className="px-6 pb-4">
           {prototype.description ? <p className="mb-2 line-clamp-2 text-sm text-abyss-7">{prototype.description}</p> : null}
+          {prototype.tags.length ? <div className="mb-2 flex flex-wrap gap-1">{prototype.tags.map((id) => tagInfo(id)).filter(Boolean).map((tag) => <Badge key={tag!.id} variant="muted"><span aria-hidden>{tag!.emoji}</span>{tag!.label}</Badge>)}</div> : null}
           <div className="mt-2 flex items-center justify-between gap-2 border-t border-carbon-3 pt-4">
             <div className="flex min-w-0 items-center gap-2"><UserAvatar id={prototype.owner_id} name={prototype.owner_name} /><div className="min-w-0"><p className="truncate text-sm font-medium text-abyss-9">{displayName(prototype.owner_name)}</p><p className="text-xs text-abyss-5">Updated {formatRelativeTime(prototype.updated_at)}</p></div></div>
             <div className="flex shrink-0 items-center gap-2"><Badge variant={prototype.open_comment_count ? "default" : "muted"} aria-label={`${prototype.open_comment_count} open comments`}><MessageSquare />{prototype.open_comment_count}</Badge>{claude ? <Badge className="bg-claude-sand text-claude-ink">Claude artifact</Badge> : prototype.embed_mode === "new_tab" && <Badge variant="muted">New tab only</Badge>}</div>
@@ -186,7 +201,7 @@ function EmptyState({ icon, title, children, action }: { icon: React.ReactNode; 
 }
 
 function EmptySearch() {
-  return <EmptyState icon={<Search />} title="No prototypes found">Try a different search term.</EmptyState>;
+  return <EmptyState icon={<Search />} title="No prototypes found">Try a different search term or tag.</EmptyState>;
 }
 
 function EmptyLibrary({ onAdd }: { onAdd: () => void }) {
