@@ -53,6 +53,16 @@ export function HowItWorks() {
             </div>
           </Section>
 
+          <Section title="Built it in Replit?">
+            <div className="flex items-start gap-2 rounded-lg border border-replit-border bg-replit-cream p-4">
+              <img src="/replit-mark.png" alt="" className="h-8 w-8 shrink-0 rounded-lg border border-replit-border bg-abyss-0 p-1.5" />
+              <div className="space-y-2">
+                <p>Paste the deployment link (the <code className="rounded bg-replit-sand px-1 text-xs">.replit.app</code> one). Public deployments show live right in the frame.</p>
+                <p>Private deployments open in a new tab, and only for people signed in to Replit with access. <b>Make the deployment public</b> if you want everyone to see it.</p>
+              </div>
+            </div>
+          </Section>
+
           <Section title="How do I give feedback?">
             <Steps>
               <Step icon={<MessageSquare />}>Open any prototype and write a comment on the right. <b>⌘↵</b> posts it.</Step>

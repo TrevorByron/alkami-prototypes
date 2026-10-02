@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Link, Route, Routes } from "react-router-dom";
-import { ArrowUpRight, ExternalLink, Globe, Hammer, Tag, LayoutGrid, Loader2, LockKeyhole, MessageSquare, Plus, RotateCcw, Search, Trash2, Users } from "lucide-react";
+import { ArrowUpRight, Hammer, Tag, LayoutGrid, Loader2, MessageSquare, Plus, RotateCcw, Search, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AddPrototypeDialog } from "@/components/AddPrototypeDialog";
 import { AppMark } from "@/components/AppMark";
-import { ClaudeMark } from "@/components/ClaudeMark";
+import { PlatformBadge, PlatformMark, PlatformPreview } from "@/components/Platform";
 import { HowItWorks } from "@/components/HowItWorks";
 import { TagEditor } from "@/components/TagEditor";
 import { UserAvatar, UserIdentity } from "@/components/UserIdentity";
@@ -24,7 +24,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { type Contributor, useContributors } from "@/hooks/useContributors";
 import { usePrototypes } from "@/hooks/usePrototypes";
 import { isDemoMode } from "@/lib/demoMode";
-import { claudeArtifact } from "@/lib/claude";
+import { detectPlatform } from "@/lib/platforms";
 import { displayName } from "@/lib/names";
 import { prototypeTags, tagInfo } from "@/lib/tags";
 import type { PrototypeSummary } from "@/lib/types";
@@ -151,7 +151,8 @@ function ContributorsCard({ contributors }: { contributors: Contributor[] }) {
 
 function PrototypeCard({ prototype, onDelete, onTagsChange }: { prototype: PrototypeSummary; onDelete: (id: string) => Promise<string | null>; onTagsChange: (tags: string[]) => void }) {
   const host = (() => { try { return new URL(prototype.url).host; } catch { return prototype.url; } })();
-  const claude = claudeArtifact(prototype.url);
+  const platform = detectPlatform(prototype.url, prototype.embed_mode);
+  const external = Boolean(platform?.external);
   const [faviconFailed, setFaviconFailed] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -170,15 +171,15 @@ function PrototypeCard({ prototype, onDelete, onTagsChange }: { prototype: Proto
 
   return (
     <Card className="relative overflow-hidden transition-colors hover:border-marine-5 focus-within:border-marine-5">
-      {claude ? <ClaudePreview url={prototype.url} access={claude.access} /> : null}
+      {platform && external ? <PlatformPreview platform={platform} url={prototype.url} /> : null}
       <Link to={`/p/${prototype.id}`} className="group block focus-visible:outline-none">
-        {claude ? null : <div className="relative h-36 overflow-hidden border-b border-carbon-3 bg-carbon-1">
+        {external ? null : <div className="relative h-36 overflow-hidden border-b border-carbon-3 bg-carbon-1">
           {prototype.embed_mode === "live" ? <div className="pointer-events-none absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.3] bg-abyss-0"><iframe title={`${prototype.name} preview`} src={prototype.url} loading="lazy" tabIndex={-1} className="h-full w-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads" /></div> : <div className="flex h-full items-center justify-center text-xs text-abyss-5">Opens in a new tab</div>}
         </div>}
         <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-4">
           <div className="flex min-w-0 items-center gap-2">
-            {claude ? <ClaudeMark className="h-10 w-10" /> : <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-carbon-3 bg-carbon-0 text-sm font-medium text-abyss-7">{prototype.favicon_url && !faviconFailed ? <img src={prototype.favicon_url} alt="" className="h-5 w-5" onError={() => setFaviconFailed(true)} /> : host.slice(0, 1).toUpperCase()}</div>}
-            <div className="min-w-0"><h3 className="truncate text-base font-medium leading-5 text-abyss-9 group-hover:text-marine-5">{prototype.name}</h3><p className="truncate text-xs text-abyss-5">{claude ? (claude.access === "public" ? "Published on claude.ai" : "Shared on claude.ai") : host}</p></div>
+            {platform ? <PlatformMark platform={platform} /> : <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-carbon-3 bg-carbon-0 text-sm font-medium text-abyss-7">{prototype.favicon_url && !faviconFailed ? <img src={prototype.favicon_url} alt="" className="h-5 w-5" onError={() => setFaviconFailed(true)} /> : host.slice(0, 1).toUpperCase()}</div>}
+            <div className="min-w-0"><h3 className="truncate text-base font-medium leading-5 text-abyss-9 group-hover:text-marine-5">{prototype.name}</h3><p className="truncate text-xs text-abyss-5">{platform ? platform.subtitle : host}</p></div>
           </div>
           <ArrowUpRight className="h-5 w-5 shrink-0 text-abyss-5 group-hover:text-marine-5" />
         </div>
@@ -187,7 +188,7 @@ function PrototypeCard({ prototype, onDelete, onTagsChange }: { prototype: Proto
           {prototype.tags.length ? <div className="mb-2 flex flex-wrap gap-1">{prototype.tags.map((id) => tagInfo(id)).filter(Boolean).map((tag) => <Badge key={tag!.id} variant="muted"><span aria-hidden>{tag!.emoji}</span>{tag!.label}</Badge>)}</div> : null}
           <div className="mt-2 flex items-center justify-between gap-2 border-t border-carbon-3 pt-4">
             <div className="flex min-w-0 items-center gap-2"><UserAvatar id={prototype.owner_id} name={prototype.owner_name} /><div className="min-w-0"><p className="truncate text-sm font-medium text-abyss-9">{displayName(prototype.owner_name)}</p><p className="text-xs text-abyss-5">Updated {formatRelativeTime(prototype.updated_at)}</p></div></div>
-            <div className="flex shrink-0 items-center gap-2"><Badge variant={prototype.open_comment_count ? "default" : "muted"} aria-label={`${prototype.open_comment_count} open comments`}><MessageSquare />{prototype.open_comment_count}</Badge>{claude ? <Badge className="bg-claude-sand text-claude-ink">Claude artifact</Badge> : prototype.embed_mode === "new_tab" && <Badge variant="muted">New tab only</Badge>}</div>
+            <div className="flex shrink-0 items-center gap-2"><Badge variant={prototype.open_comment_count ? "default" : "muted"} aria-label={`${prototype.open_comment_count} open comments`}><MessageSquare />{prototype.open_comment_count}</Badge>{platform ? <PlatformBadge platform={platform} /> : prototype.embed_mode === "new_tab" && <Badge variant="muted">New tab only</Badge>}</div>
           </div>
         </div>
       </Link>
@@ -200,23 +201,6 @@ function PrototypeCard({ prototype, onDelete, onTagsChange }: { prototype: Proto
         </DialogContent>
       </Dialog>
     </Card>
-  );
-}
-
-// Claude artifacts can't be framed, so instead of a live thumbnail the card
-// shows a stylised artifact window that opens the real thing on claude.ai.
-function ClaudePreview({ url, access }: { url: string; access: "public" | "invited" }) {
-  return (
-    <a href={url} target="_blank" rel="noopener noreferrer" className="group/claude relative block h-36 overflow-hidden border-b border-carbon-3 bg-gradient-to-br from-claude-cream via-claude-cream to-claude-sand focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-marine-2" aria-label="Open the Claude artifact on claude.ai in a new tab">
-      <div className="absolute inset-x-6 top-5 rounded-lg border border-claude-border bg-abyss-0 shadow-tropo transition-transform duration-200 group-hover/claude:-translate-y-0.5" aria-hidden>
-        <div className="flex items-center gap-2 border-b border-claude-border px-3 py-2"><ClaudeMark className="h-4 w-4 !rounded" /><span className="h-1.5 w-20 rounded-full bg-claude-sand" /></div>
-        <div className="space-y-2 px-3 py-3"><span className="block h-2 w-2/3 rounded-full bg-claude/30" /><span className="block h-2 w-1/2 rounded-full bg-claude-sand" /><span className="block h-2 w-3/4 rounded-full bg-claude-sand" /></div>
-      </div>
-      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-claude-cream via-claude-cream/95 to-transparent px-6 pb-3 pt-6">
-        <span className="flex items-center gap-1 text-xs text-claude-ink">{access === "public" ? <Globe className="h-4 w-4" /> : <LockKeyhole className="h-4 w-4" />}{access === "public" ? "Anyone with the link" : "Needs Claude access"}</span>
-        <span className="inline-flex min-h-8 items-center gap-1 rounded-lg bg-claude px-3 text-xs font-medium text-abyss-0 transition-colors group-hover/claude:bg-claude-dark">Opens in a new tab<ExternalLink className="h-4 w-4" /></span>
-      </div>
-    </a>
   );
 }
 

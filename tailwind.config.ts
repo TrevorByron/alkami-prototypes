@@ -7,6 +7,8 @@ export default {
       colors: {
         // Not Console: Claude's brand palette, used only to mark Claude artifacts.
         claude: { DEFAULT: "#D97757", dark: "#C15F3C", ink: "#8A3F24", cream: "#FAF9F5", sand: "#F0EEE6", border: "#E3DACC" },
+        // Not Console: Replit's brand orange (#FD5402, from its logo), used only to mark Replit apps.
+        replit: { DEFAULT: "#FD5402", dark: "#D94600", ink: "#9A3200", cream: "#FFF7F2", sand: "#FFE9DC", border: "#FFD2BA" },
         // Console primitives: text-abyss-5, bg-tiaga-0, border-carbon-3, …
         abyss: Object.fromEntries(Array.from({ length: 10 }, (_, step) => [step, `hsl(var(--color-abyss-${step}))`])),
         carbon: Object.fromEntries(Array.from({ length: 10 }, (_, step) => [step, `hsl(var(--color-carbon-${step}))`])),

@@ -1,0 +1,142 @@
+<!doctype html>
+<!--
+  Source for public/og-image.png, the link-preview image Slack and others show.
+  Re-render after editing:  npm run og
+  Colours are Console tokens (abyss, carbon, marine, tiaga, desert, alpine) plus
+  the Claude palette used for Claude artifacts in the app.
+-->
+<html>
+<head>
+<meta charset="utf-8" />
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500&display=block" rel="stylesheet" />
+<style>
+  :root {
+    --abyss-0: #ffffff; --abyss-5: #6a6b6c; --abyss-7: #373839; --abyss-9: #040506;
+    --carbon-0: #f8f9fa; --carbon-1: #ecedef; --carbon-2: #dee0e4; --carbon-3: #cfd3d8; --carbon-5: #acb3bd;
+    --marine-0: #e7effa; --marine-1: #ccddf6; --marine-5: #1b66d7; --marine-8: #11418a;
+    --tiaga-0: #e5faf2; --tiaga-8: #118e5c; --desert-0: #fdf5e8; --desert-8: #9a5f0e;
+    --alpine-0: #f4eafb; --alpine-8: #6b2f91; --chaparral-0: #fbeae8; --chaparral-8: #9a2113;
+    --claude: #D97757; --claude-cream: #FAF9F5; --claude-sand: #F0EEE6; --claude-border: #E3DACC;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: "Fira Sans", system-ui, sans-serif; color: var(--abyss-9);
+    background: var(--carbon-0);
+    background-image: radial-gradient(var(--carbon-3) 1.2px, transparent 1.2px);
+    background-size: 26px 26px;
+    position: relative;
+  }
+  .wash { position: absolute; inset: 0; background: linear-gradient(90deg, var(--carbon-0) 0%, var(--carbon-0) 46%, rgba(248,249,250,0) 54%); }
+  .left { position: absolute; left: 72px; top: 0; bottom: 0; width: 560px; display: flex; flex-direction: column; justify-content: center; }
+  .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 36px; }
+  .brand img { width: 56px; height: 56px; border-radius: 12px; border: 1px solid var(--carbon-3); }
+  .brand span { font-size: 24px; font-weight: 500; }
+  .eyebrow { display: inline-flex; align-self: flex-start; align-items: center; gap: 8px; font-size: 16px; font-weight: 500; color: var(--marine-5); background: var(--marine-0); border-radius: 6px; padding: 6px 12px; margin-bottom: 20px; letter-spacing: 0.02em; }
+  h1 { font-size: 66px; line-height: 1.04; font-weight: 500; letter-spacing: -0.015em; }
+  h1 em { font-style: normal; color: var(--marine-5); }
+  p.sub { margin-top: 20px; font-size: 25px; line-height: 1.4; color: var(--abyss-5); max-width: 520px; }
+  .pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px; }
+  .pill { height: 40px; padding: 0 16px; border-radius: 24px; border: 1.5px solid var(--carbon-5); background: var(--abyss-0); display: inline-flex; align-items: center; gap: 6px; font-size: 18px; }
+  .pill.on { border-color: var(--marine-5); background: var(--marine-0); color: var(--marine-5); }
+
+  .stage { position: absolute; right: 8px; top: -6px; width: 600px; height: 640px; }
+  .card { position: absolute; width: 330px; background: var(--abyss-0); border: 1px solid var(--carbon-3); border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.10); overflow: hidden; }
+  .preview { height: 150px; border-bottom: 1px solid var(--carbon-3); position: relative; overflow: hidden; }
+  .body { padding: 14px 18px 16px; }
+  .title { font-size: 19px; font-weight: 500; }
+  .host { font-size: 14px; color: var(--abyss-5); margin-top: 2px; }
+  .meta { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--carbon-2); }
+  .who { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
+  .av { width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; flex-shrink: 0; }
+  .tag { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 4px; background: var(--carbon-1); color: var(--abyss-7); font-size: 12px; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 4px; background: var(--marine-0); color: var(--marine-5); font-size: 13px; }
+
+  /* mock app screens inside previews */
+  .ui { position: absolute; inset: 14px; border-radius: 8px; background: var(--abyss-0); border: 1px solid var(--carbon-2); padding: 12px; }
+  .bar { height: 9px; border-radius: 5px; background: var(--carbon-2); margin-bottom: 8px; }
+  .row { display: flex; gap: 8px; margin-top: 10px; }
+  .tile { flex: 1; height: 46px; border-radius: 6px; }
+
+  .c1 { left: 20px; top: 56px; transform: rotate(-5deg); }
+  .c2 { left: 238px; top: 128px; transform: rotate(4deg); z-index: 3; }
+  .c3 { left: 44px; top: 372px; width: 300px; transform: rotate(-2deg); z-index: 2; }
+
+  .claude-preview { background: linear-gradient(135deg, var(--claude-cream), var(--claude-sand)); }
+  .claude-window { position: absolute; left: 18px; right: 18px; top: 18px; border-radius: 8px; border: 1px solid var(--claude-border); background: #fff; }
+  .claude-window .top { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--claude-border); }
+  .claude-window .top img { width: 16px; height: 16px; border-radius: 4px; }
+  .claude-cta { position: absolute; right: 16px; bottom: 12px; height: 28px; padding: 0 12px; border-radius: 8px; background: var(--claude); color: #fff; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; }
+
+  .comment { position: absolute; left: 266px; top: 462px; width: 300px; z-index: 4; background: var(--abyss-0); border: 1px solid var(--carbon-3); border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.12); padding: 14px 16px; transform: rotate(3deg); }
+  .comment .text { font-size: 16px; color: var(--abyss-7); margin: 8px 0 10px 38px; }
+  .comment .acts { margin-left: 38px; display: flex; gap: 14px; font-size: 14px; font-weight: 500; color: var(--abyss-7); }
+  .comment .acts .up { color: var(--marine-5); }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="card c1">
+      <div class="preview" style="background: var(--marine-0)">
+        <div class="ui">
+          <div class="bar" style="width: 45%; background: var(--marine-1)"></div>
+          <div class="bar" style="width: 70%"></div>
+          <div class="row"><div class="tile" style="background: var(--tiaga-0)"></div><div class="tile" style="background: var(--marine-0)"></div><div class="tile" style="background: var(--desert-0)"></div></div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="title">Treasury dashboard</div>
+        <div class="host">treasury-dashboard.vercel.app</div>
+        <div class="meta"><div class="who"><span class="av" style="background: var(--tiaga-0); color: var(--tiaga-8)">MK</span>Maya Kim</div><span class="tag">🛠️ Working</span></div>
+      </div>
+    </div>
+
+    <div class="card c2">
+      <div class="preview claude-preview">
+        <div class="claude-window">
+          <div class="top"><img src="../../public/claude-mark.png" alt="" /><div class="bar" style="width: 90px; margin: 0; background: var(--claude-sand)"></div></div>
+          <div style="padding: 10px 10px 4px"><div class="bar" style="width: 62%; background: rgba(217,119,87,0.3)"></div><div class="bar" style="width: 48%; background: var(--claude-sand)"></div></div>
+        </div>
+        <span class="claude-cta">Opens in a new tab ↗</span>
+      </div>
+      <div class="body">
+        <div class="title">Onboarding flow, reimagined</div>
+        <div class="host">Published on claude.ai</div>
+        <div class="meta"><div class="who"><span class="av" style="background: var(--alpine-0); color: var(--alpine-8)">JR</span>Jordan Reyes</div><span class="tag">🎉 Just for fun</span></div>
+      </div>
+    </div>
+
+    <div class="card c3">
+      <div class="preview" style="background: var(--desert-0); height: 120px">
+        <div class="ui">
+          <div class="row" style="margin-top: 0"><div class="tile" style="height: 70px; background: var(--carbon-1)"></div><div style="flex: 2"><div class="bar" style="width: 80%"></div><div class="bar" style="width: 55%"></div><div class="bar" style="width: 65%; background: var(--desert-0)"></div></div></div>
+        </div>
+      </div>
+      <div class="body">
+        <div class="title">Member insights</div>
+        <div class="meta" style="margin-top: 8px"><div class="who"><span class="av" style="background: var(--desert-0); color: var(--desert-8)">SP</span>Sam Patel</div><span class="badge">💬 8</span></div>
+      </div>
+    </div>
+
+    <div class="comment">
+      <div class="who"><span class="av" style="background: var(--marine-0); color: var(--marine-8)">AL</span>Alex Lee <span style="font-weight: 400; color: var(--abyss-5); font-size: 13px">· 2m ago</span></div>
+      <div class="text">Ok this is so good. Can we ship this? 👀</div>
+      <div class="acts"><span class="up">👍 12</span><span>💬 Reply</span></div>
+    </div>
+  </div>
+
+  <div class="wash"></div>
+
+  <div class="left">
+    <div class="brand"><img src="../../public/favicon.png" alt="" /><span>Alkami Prototypes</span></div>
+    <span class="eyebrow">🛠️ Builders club</span>
+    <h1>See what Alkami<br />is <em>building.</em></h1>
+    <p class="sub">Click into prototypes from across the company, leave a comment, share your own.</p>
+    <div class="pills">
+      <span class="pill on">🎉 Just for fun</span>
+      <span class="pill">🧭 Exploratory</span>
+      <span class="pill">🛠️ Working</span>
+    </div>
+  </div>
+</body>
+</html>
