@@ -44,7 +44,7 @@ export function VibeCodeDialog() {
           Vibe Code in Mantl
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl p-0">
+      <DialogContent className="max-w-none p-0" style={{ width: "min(calc(100% - 2rem), 56rem)" }}>
         <div className="border-b border-carbon-3 bg-carbon-0 px-6 pb-6 pt-6 pr-14 sm:px-8">
           <Badge variant="default" className="mb-3">Mantl design playground</Badge>
           <DialogHeader>
