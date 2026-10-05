@@ -11,6 +11,7 @@ import { PlatformBadge, PlatformMark, PlatformPreview } from "@/components/Platf
 import { HowItWorks } from "@/components/HowItWorks";
 import { TagEditor } from "@/components/TagEditor";
 import { UserAvatar, UserIdentity } from "@/components/UserIdentity";
+import { VibeCodeDialog } from "@/components/VibeCodeDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -90,7 +91,10 @@ function Library() {
             <h1 className="text-2xl font-medium leading-8 text-abyss-9">Prototypes</h1>
             <p className="mt-1 max-w-xl text-sm text-abyss-5">One shared home for prototypes built across Alkami. Explore what teammates are making, leave feedback, and keep ideas moving together.</p>
           </div>
-          <Button size="lg" className="shrink-0" onClick={() => setAddOpen(true)}><Plus />Add prototype</Button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <VibeCodeDialog />
+            <Button size="lg" className="shrink-0" onClick={() => setAddOpen(true)}><Plus />Add prototype</Button>
+          </div>
         </section>
 
         <div className="mb-6 grid gap-4 sm:grid-cols-3">
