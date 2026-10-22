@@ -89,8 +89,11 @@
     --color-abyss-8: 210 3.4% 11.4%;
     --color-abyss-9: 210 20% 2%;
 
-    /* Console typography scale. */
-    --font-family-base: "Fira Sans", ui-sans-serif, system-ui, sans-serif;
+    /* Console typography scale, set in pixel style: Fira Mono (the monospaced
+       sibling of Console's Fira Sans) for all reading text, and Silkscreen, a
+       pixel face, for titles only. */
+    --font-family-base: "Fira Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-family-pixel: "Silkscreen", "Fira Mono", ui-monospace, monospace;
     --font-size-title: 24px;
     --line-height-title: 32px;
     --font-size-subheader: 20px;
@@ -128,6 +131,12 @@
     --shadow-strato: 0 10px 15px 0 rgb(0 0 0 / 0.1);
     --shadow-meso: 0 5px 20px 0 rgb(0 0 0 / 0.4);
     --shadow-thermo: 0 20px 40px 0 rgb(0 0 0 / 0.1);
+    /* Pixel elevation: hard, unblurred offsets instead of soft shadows. */
+    --shadow-pixel: 4px 4px 0 0 hsl(var(--color-carbon-2));
+    --shadow-pixel-lift: 6px 6px 0 0 hsl(var(--color-marine-1));
+    --shadow-pixel-pop: 8px 8px 0 0 hsl(var(--color-abyss-9) / 0.15);
+    /* Clips a box to a square with one-pixel-step corners, for small chips. */
+    --pixel-notch: polygon(2px 0, calc(100% - 2px) 0, calc(100% - 2px) 2px, 100% 2px, 100% calc(100% - 2px), calc(100% - 2px) calc(100% - 2px), calc(100% - 2px) 100%, 2px 100%, 2px calc(100% - 2px), 0 calc(100% - 2px), 0 2px, 2px 2px);
 
     /* Semantic aliases used by the existing component layer. */
     --background: var(--color-abyss-0);
@@ -158,7 +167,8 @@
     --border: var(--color-carbon-3);
     --input: var(--color-carbon-3);
     --ring: var(--color-marine-2);
-    --radius: var(--radius-8);
+    /* Squarer than Console's 8 so edges read as pixels. */
+    --radius: var(--radius-4);
   }
 
 
@@ -171,12 +181,52 @@
     font-family: var(--font-family-base);
     font-size: var(--font-size-body);
     line-height: var(--line-height-body);
+    font-variant-ligatures: none;
+  }
+
+  /* Titles are pixel type; everything else stays monospaced. */
+  h1, h2, h3, h4 {
+    font-family: var(--font-family-pixel);
+    font-weight: 400;
+    letter-spacing: 0;
   }
 }
 
 @layer utilities {
+  /* 2px square dots (carbon.2) on a 16px grid. */
   .dot-grid {
-    background-image: radial-gradient(hsl(var(--border) / 0.8) 1px, transparent 1px);
-    background-size: 22px 22px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Crect x='7' y='7' width='2' height='2' fill='%23dee0e4'/%3E%3C/svg%3E");
+  }
+
+  .pixel-notch {
+    clip-path: var(--pixel-notch);
+  }
+
+  /* A blinking cursor after a title, like a game waiting for input. */
+  .pixel-cursor::after {
+    content: "_";
+    margin-left: 0.125rem;
+    color: hsl(var(--color-marine-5));
+    animation: pixel-blink 1.1s steps(2, start) infinite;
+  }
+
+  /* Hover lifts in three hard steps, the way a sprite moves. */
+  .pixel-lift {
+    box-shadow: var(--shadow-pixel);
+    transition: transform 120ms steps(3), box-shadow 120ms steps(3), border-color 120ms steps(3);
+  }
+  .pixel-lift:hover,
+  .pixel-lift:focus-within {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-pixel-lift);
+  }
+
+  @keyframes pixel-blink {
+    to { visibility: hidden; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pixel-cursor::after { animation: none; }
+    .pixel-lift, .pixel-lift:hover, .pixel-lift:focus-within { transform: none; transition: none; }
   }
 }

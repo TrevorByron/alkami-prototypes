@@ -3,9 +3,10 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 // Console's Card: 1px carbon.3 border, radius 8, white, py 16 / px 24, abyss.7
-// text. Flat by default; elevation is opt-in upstream.
+// text. Flat by default; elevation is opt-in upstream. Pixel treatment: a 2px
+// carbon.2 border, so edges read as chunky pixels.
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => <div ref={ref} className={cn("rounded-lg border border-carbon-3 bg-abyss-0 text-abyss-7", className)} {...props} />,
+  ({ className, ...props }, ref) => <div ref={ref} className={cn("rounded-lg border-2 border-carbon-2 bg-abyss-0 text-abyss-7", className)} {...props} />,
 );
 Card.displayName = "Card";
 

@@ -5,8 +5,9 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 // Same look as ConsoleBadge (x-darwin UI/badge, small size); these variant
-// names are kept so existing call sites map onto Console colour modes.
-const badgeVariants = cva("inline-flex min-h-5 items-center gap-1 whitespace-nowrap rounded px-2 text-xs leading-4 [&_svg]:h-3.5 [&_svg]:w-3.5", {
+// names are kept so existing call sites map onto Console colour modes. The
+// corners are notched a pixel deep instead of rounded.
+const badgeVariants = cva("pixel-notch inline-flex min-h-5 items-center gap-1 whitespace-nowrap px-2 text-xs leading-4 [&_svg]:h-3.5 [&_svg]:w-3.5", {
   variants: {
     variant: {
       default: "bg-marine-0 text-marine-5",
