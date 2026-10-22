@@ -46,7 +46,7 @@ export function SignIn() {
       <Card className="w-full max-w-md px-8 py-8">
         <div className="flex flex-col items-center text-center">
           <AppMark className="mb-4 h-12 w-12" />
-          <h1 className="text-2xl font-medium leading-8 text-abyss-9">Welcome to Alkami Prototypes</h1>
+          <h1 className="text-2xl leading-8 text-marine-8">Welcome to Alkami Prototypes</h1>
           <p className="mt-1 max-w-xs text-sm text-abyss-5">A shared space to explore what teammates are building and leave thoughtful feedback.</p>
         </div>
         <div className="mt-6 space-y-4">

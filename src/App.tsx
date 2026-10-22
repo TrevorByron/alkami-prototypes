@@ -132,7 +132,7 @@ const statTones = {
 };
 
 function StatCard({ icon, tone, label, value, unit }: { icon: React.ReactNode; tone: keyof typeof statTones; label: string; value: number; unit: string }) {
-  return <Card className="flex items-center gap-4 px-6 py-4 shadow-pixel"><div className={`pixel-notch flex h-10 w-10 shrink-0 items-center justify-center [&_svg]:h-5 [&_svg]:w-5 ${statTones[tone]}`}>{icon}</div><div className="min-w-0"><p className="font-pixel text-xs uppercase text-abyss-5">{label}</p><p className="truncate text-sm text-abyss-7"><span className="font-pixel text-2xl leading-8 text-abyss-9">{value}</span> {unit}</p></div></Card>;
+  return <Card className="flex items-center gap-4 px-6 py-4 shadow-pixel"><div className={`pixel-notch flex h-10 w-10 shrink-0 items-center justify-center [&_svg]:h-5 [&_svg]:w-5 ${statTones[tone]}`}>{icon}</div><div className="min-w-0"><p className="text-xs text-abyss-5">{label}</p><p className="truncate text-sm text-abyss-7"><span className="text-xl font-bold leading-6 text-abyss-9">{value}</span> {unit}</p></div></Card>;
 }
 
 // Looks exactly like the other stat cards (no hover state) on purpose: clicking
@@ -182,7 +182,7 @@ function PrototypeCard({ prototype, onDelete, onTagsChange }: { prototype: Proto
         </div>}
         <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-4">
           <div className="flex min-w-0 items-center gap-2">
-            {platform ? <PlatformMark platform={platform} /> : <div className="pixel-notch flex h-10 w-10 shrink-0 items-center justify-center bg-carbon-1 font-pixel text-base text-abyss-7">{prototype.favicon_url && !faviconFailed ? <img src={prototype.favicon_url} alt="" className="h-5 w-5" onError={() => setFaviconFailed(true)} /> : host.slice(0, 1).toUpperCase()}</div>}
+            {platform ? <PlatformMark platform={platform} /> : <div className="pixel-notch flex h-10 w-10 shrink-0 items-center justify-center bg-carbon-1 text-base font-bold text-abyss-7">{prototype.favicon_url && !faviconFailed ? <img src={prototype.favicon_url} alt="" className="h-5 w-5" onError={() => setFaviconFailed(true)} /> : host.slice(0, 1).toUpperCase()}</div>}
             <div className="min-w-0"><h3 className="truncate text-base leading-5 text-abyss-9 group-hover:text-marine-5">{prototype.name}</h3><p className="truncate text-xs text-abyss-5">{platform ? platform.subtitle : host}</p></div>
           </div>
           <ArrowUpRight className="h-5 w-5 shrink-0 text-abyss-5 group-hover:text-marine-5" />

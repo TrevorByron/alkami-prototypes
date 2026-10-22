@@ -90,7 +90,7 @@ export function HowItWorks() {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section><h3 className="mb-2 text-base font-medium text-abyss-9">{title}</h3>{children}</section>;
+  return <section><h3 className="mb-2 text-base font-bold text-abyss-9">{title}</h3>{children}</section>;
 }
 
 function Steps({ children }: { children: React.ReactNode }) {

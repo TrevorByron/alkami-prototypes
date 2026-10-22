@@ -90,8 +90,8 @@
     --color-abyss-9: 210 20% 2%;
 
     /* Console typography scale, set in pixel style: Fira Mono (the monospaced
-       sibling of Console's Fira Sans) for all reading text, and Silkscreen, a
-       pixel face, for titles only. */
+       sibling of Console's Fira Sans) for all reading text and bold for card and
+       section headings, and Silkscreen, a pixel face, for page titles only. */
     --font-family-base: "Fira Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
     --font-family-pixel: "Silkscreen", "Fira Mono", ui-monospace, monospace;
     --font-size-title: 24px;
@@ -184,11 +184,16 @@
     font-variant-ligatures: none;
   }
 
-  /* Titles are pixel type; everything else stays monospaced. */
-  h1, h2, h3, h4 {
+  /* Page titles are pixel type; card, dialog and section headings are bold
+     monospace, like the rest of the text. */
+  h1 {
     font-family: var(--font-family-pixel);
     font-weight: 400;
     letter-spacing: 0;
+  }
+
+  h2, h3, h4 {
+    font-weight: 700;
   }
 }
 
