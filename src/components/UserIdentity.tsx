@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 // Console's Avatar `user` theme pairs a .0 fill with .8 initials (tiaga.0 /
 // tiaga.8). Each person gets one family, picked from a hash of their id so it
 // stays the same on every screen and every visit. Classes are written out in
-// full so Tailwind can see them.
+// full so Tailwind can see them. Avatars are pixel-notched squares, not circles.
 const avatarColors = [
   "bg-marine-0 text-marine-8",
   "bg-tiaga-0 text-tiaga-8",
@@ -27,7 +27,7 @@ const avatarSizes = {
 
 export function UserAvatar({ id, name, src, size = "default", className }: { id?: string | null; name: string; src?: string | null; size?: keyof typeof avatarSizes; className?: string }) {
   return (
-    <span className={cn("relative flex shrink-0 items-center justify-center overflow-hidden rounded-full font-medium", avatarColor(id || name), avatarSizes[size], className)} title={displayName(name)}>
+    <span className={cn("relative flex shrink-0 items-center justify-center pixel-notch overflow-hidden font-medium", avatarColor(id || name), avatarSizes[size], className)} title={displayName(name)}>
       {src ? <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" /> : initials(name)}
     </span>
   );

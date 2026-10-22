@@ -66,7 +66,15 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        sans: ["var(--font-family-base)"],
+        mono: ["var(--font-family-base)"],
+        pixel: ["var(--font-family-pixel)"],
+      },
       boxShadow: {
+        pixel: "var(--shadow-pixel)",
+        "pixel-lift": "var(--shadow-pixel-lift)",
+        "pixel-pop": "var(--shadow-pixel-pop)",
         tropo: "var(--shadow-tropo)",
         strato: "var(--shadow-strato)",
         meso: "var(--shadow-meso)",

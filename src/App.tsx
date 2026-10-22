@@ -50,11 +50,11 @@ function TopBar() {
   const me = profile?.name ?? user?.email ?? "Member";
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-carbon-3 bg-abyss-0 px-6">
+    <header className="flex h-16 items-center justify-between border-b-2 border-carbon-2 bg-abyss-0 px-6">
       <div className="flex items-center gap-4">
         <Link to="/" className="flex items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marine-2">
           <AppMark />
-          <span className="text-base font-medium text-abyss-9">Alkami Prototypes</span>
+          <span className="pixel-cursor whitespace-nowrap font-pixel text-base text-marine-8">Alkami Prototypes</span>
         </Link>
         <Separator className="h-6 w-px" />
         <span className="text-sm text-abyss-5">Team prototype library</span>
@@ -82,13 +82,13 @@ function Library() {
   const builders = builderCount(prototypes);
 
   return (
-    <div className="min-h-screen bg-carbon-0">
+    <div className="dot-grid min-h-screen bg-carbon-0">
       <TopBar />
       <main className="mx-auto max-w-7xl px-6 py-8">
         <section className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             {isDemoMode ? <Badge variant="warning" className="mb-2">Local demo mode</Badge> : null}
-            <h1 className="text-2xl font-medium leading-8 text-abyss-9">Prototypes</h1>
+            <h1 className="text-2xl leading-8 text-marine-8">Prototypes</h1>
             <p className="mt-1 max-w-xl text-sm text-abyss-5">One shared home for prototypes built across Alkami. Explore what teammates are making, leave feedback, and keep ideas moving together.</p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -132,7 +132,7 @@ const statTones = {
 };
 
 function StatCard({ icon, tone, label, value, unit }: { icon: React.ReactNode; tone: keyof typeof statTones; label: string; value: number; unit: string }) {
-  return <Card className="flex items-center gap-4 px-6 py-4"><div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg [&_svg]:h-5 [&_svg]:w-5 ${statTones[tone]}`}>{icon}</div><div className="min-w-0"><p className="text-xs text-abyss-5">{label}</p><p className="truncate text-sm text-abyss-7"><span className="text-xl font-medium leading-6 text-abyss-9">{value}</span> {unit}</p></div></Card>;
+  return <Card className="flex items-center gap-4 px-6 py-4 shadow-pixel"><div className={`pixel-notch flex h-10 w-10 shrink-0 items-center justify-center [&_svg]:h-5 [&_svg]:w-5 ${statTones[tone]}`}>{icon}</div><div className="min-w-0"><p className="font-pixel text-xs uppercase text-abyss-5">{label}</p><p className="truncate text-sm text-abyss-7"><span className="font-pixel text-2xl leading-8 text-abyss-9">{value}</span> {unit}</p></div></Card>;
 }
 
 // Looks exactly like the other stat cards (no hover state) on purpose: clicking
@@ -174,23 +174,23 @@ function PrototypeCard({ prototype, onDelete, onTagsChange }: { prototype: Proto
   }
 
   return (
-    <Card className="relative overflow-hidden transition-colors hover:border-marine-5 focus-within:border-marine-5">
+    <Card className="pixel-lift relative overflow-hidden hover:border-marine-2 focus-within:border-marine-2">
       {platform && external ? <PlatformPreview platform={platform} url={prototype.url} /> : null}
       <Link to={`/p/${prototype.id}`} className="group block focus-visible:outline-none">
-        {external ? null : <div className="relative h-36 overflow-hidden border-b border-carbon-3 bg-carbon-1">
+        {external ? null : <div className="relative h-36 overflow-hidden border-b-2 border-carbon-2 bg-carbon-1">
           {prototype.embed_mode === "live" ? <div className="pointer-events-none absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.3] bg-abyss-0"><iframe title={`${prototype.name} preview`} src={prototype.url} loading="lazy" tabIndex={-1} className="h-full w-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads" /></div> : <div className="flex h-full items-center justify-center text-xs text-abyss-5">Opens in a new tab</div>}
         </div>}
         <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-4">
           <div className="flex min-w-0 items-center gap-2">
-            {platform ? <PlatformMark platform={platform} /> : <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-carbon-3 bg-carbon-0 text-sm font-medium text-abyss-7">{prototype.favicon_url && !faviconFailed ? <img src={prototype.favicon_url} alt="" className="h-5 w-5" onError={() => setFaviconFailed(true)} /> : host.slice(0, 1).toUpperCase()}</div>}
-            <div className="min-w-0"><h3 className="truncate text-base font-medium leading-5 text-abyss-9 group-hover:text-marine-5">{prototype.name}</h3><p className="truncate text-xs text-abyss-5">{platform ? platform.subtitle : host}</p></div>
+            {platform ? <PlatformMark platform={platform} /> : <div className="pixel-notch flex h-10 w-10 shrink-0 items-center justify-center bg-carbon-1 font-pixel text-base text-abyss-7">{prototype.favicon_url && !faviconFailed ? <img src={prototype.favicon_url} alt="" className="h-5 w-5" onError={() => setFaviconFailed(true)} /> : host.slice(0, 1).toUpperCase()}</div>}
+            <div className="min-w-0"><h3 className="truncate text-base leading-5 text-abyss-9 group-hover:text-marine-5">{prototype.name}</h3><p className="truncate text-xs text-abyss-5">{platform ? platform.subtitle : host}</p></div>
           </div>
           <ArrowUpRight className="h-5 w-5 shrink-0 text-abyss-5 group-hover:text-marine-5" />
         </div>
         <div className="px-6 pb-4">
           {prototype.description ? <p className="mb-2 line-clamp-2 text-sm text-abyss-7">{prototype.description}</p> : null}
           {prototype.tags.length ? <div className="mb-2 flex flex-wrap gap-1">{prototype.tags.map((id) => tagInfo(id)).filter(Boolean).map((tag) => <Badge key={tag!.id} variant="muted"><span aria-hidden>{tag!.emoji}</span>{tag!.label}</Badge>)}</div> : null}
-          <div className="mt-2 flex items-center justify-between gap-2 border-t border-carbon-3 pt-4">
+          <div className="mt-2 flex items-center justify-between gap-2 border-t-2 border-dashed border-carbon-2 pt-4">
             <div className="flex min-w-0 items-center gap-2"><UserAvatar id={prototype.owner_id} name={prototype.owner_name} /><div className="min-w-0"><p className="truncate text-sm font-medium text-abyss-9">{displayName(prototype.owner_name)}</p><p className="text-xs text-abyss-5">Updated {formatRelativeTime(prototype.updated_at)}</p></div></div>
             <div className="flex shrink-0 items-center gap-2"><Badge variant={prototype.open_comment_count ? "default" : "muted"} aria-label={`${prototype.open_comment_count} open comments`}><MessageSquare />{prototype.open_comment_count}</Badge>{platform ? <PlatformBadge platform={platform} /> : prototype.embed_mode === "new_tab" && <Badge variant="muted">New tab only</Badge>}</div>
           </div>
@@ -209,7 +209,7 @@ function PrototypeCard({ prototype, onDelete, onTagsChange }: { prototype: Proto
 }
 
 function EmptyState({ icon, title, children, action }: { icon: React.ReactNode; title: string; children: React.ReactNode; action?: React.ReactNode }) {
-  return <Card className="flex min-h-64 flex-col items-center justify-center border-dashed px-6 py-8 text-center"><div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-carbon-1 text-abyss-5 [&_svg]:h-5 [&_svg]:w-5">{icon}</div><h2 className="text-base font-medium text-abyss-9">{title}</h2><p className="mt-1 max-w-sm text-sm text-abyss-5">{children}</p>{action ? <div className="mt-4">{action}</div> : null}</Card>;
+  return <Card className="flex min-h-64 flex-col items-center justify-center border-dashed border-carbon-3 px-6 py-8 text-center"><div className="pixel-notch mb-4 flex h-10 w-10 items-center justify-center bg-marine-0 text-marine-5 [&_svg]:h-5 [&_svg]:w-5">{icon}</div><h2 className="text-base text-abyss-9">{title}</h2><p className="mt-1 max-w-sm text-sm text-abyss-5">{children}</p>{action ? <div className="mt-4">{action}</div> : null}</Card>;
 }
 
 function EmptySearch() {

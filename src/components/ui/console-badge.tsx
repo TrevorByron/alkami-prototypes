@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 // Mirrors x-darwin's UI/badge: radius 4, no border, body text (caption when
 // small), and the five Console colour modes.
-const consoleBadgeVariants = cva("inline-flex items-center whitespace-nowrap rounded", {
+const consoleBadgeVariants = cva("pixel-notch inline-flex items-center whitespace-nowrap", {
   variants: {
     colorMode: {
       info: "bg-carbon-1 text-abyss-7",
