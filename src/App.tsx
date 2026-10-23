@@ -152,7 +152,7 @@ function ContributorsCard({ contributors }: { contributors: Contributor[] }) {
 
 // The library card is the preview, who built it and the two ways in. The
 // description, tags and delete live in the viewer.
-// Prototypes from Prototyping in Mantl behave a little differently (they open
+// Prototypes from Prototyping in MANTL behave a little differently (they open
 // in a new tab with handoff and code links, and are archived at the source),
 // so they get their own group above everything added by hand.
 function LibraryGroups({ prototypes, onTagsChange }: { prototypes: PrototypeSummary[]; onTagsChange: (id: string, tags: string[]) => void }) {
@@ -160,7 +160,7 @@ function LibraryGroups({ prototypes, onTagsChange }: { prototypes: PrototypeSumm
   const others = prototypes.filter((prototype) => prototype.source !== "mantl");
   return (
     <div className="space-y-10">
-      {mantl.length ? <LibraryGroup title="Mantl vibe codes" count={mantl.length} mark={<img src="/mantl-mark.svg" alt="" className="h-8 w-8 [image-rendering:pixelated]" />} onTagsChange={onTagsChange} description="Built in the real Console with Claude Code and shared from Prototyping in Mantl. Each preview is a clickable recording on a private GitHub site, so it opens in a new tab, beside its handoff notes and code." prototypes={mantl} /> : null}
+      {mantl.length ? <LibraryGroup title="MANTL vibe codes" count={mantl.length} mark={<img src="/mantl-mark.svg" alt="" className="h-8 w-8 [image-rendering:pixelated]" />} onTagsChange={onTagsChange} description="Built in the real Console with Claude Code and shared from Prototyping in MANTL. Each preview is a clickable recording on a private GitHub site, so it opens in a new tab, beside its handoff notes and code." prototypes={mantl} /> : null}
       {others.length ? <LibraryGroup onTagsChange={onTagsChange} title={mantl.length ? "All other prototypes" : "Prototypes"} count={others.length} description="Hosted prototypes added by hand: Claude artifacts, Replit apps and anything else with a link." prototypes={others} /> : null}
     </div>
   );
@@ -185,7 +185,7 @@ function PrototypeCard({ prototype, onTagsChange }: { prototype: PrototypeSummar
   const platform = detectPlatform(prototype.url, prototype.embed_mode);
   const viewerUrl = `/p/${prototype.id}`;
   const comments = prototype.open_comment_count;
-  // Prototypes from Prototyping in Mantl and other private GitHub Pages sites
+  // Prototypes from Prototyping in MANTL and other private GitHub Pages sites
   // can't be framed or discussed here: their preview is the gallery thumbnail,
   // the card opens the site, its handoff notes and its code in new tabs, and
   // tags are edited from the card (there is no viewer page to do it in).

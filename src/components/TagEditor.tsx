@@ -35,7 +35,7 @@ export function TagPicker({ prototypeId, tags, onChange }: { prototypeId: string
   );
 }
 
-// A tag button for library cards whose prototypes have no viewer page (Mantl
+// A tag button for library cards whose prototypes have no viewer page (MANTL
 // and other private GitHub Pages prototypes): it shows how many tags are set
 // and opens the same picker in a popover.
 export function TagButton({ prototypeId, tags, onChange }: { prototypeId: string; tags: string[]; onChange: (tags: string[]) => void }) {

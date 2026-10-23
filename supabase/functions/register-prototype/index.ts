@@ -1,4 +1,4 @@
-// Called by Prototyping in Mantl (myfintech/prototyping-in-mantl, workflow
+// Called by Prototyping in MANTL (myfintech/prototyping-in-mantl, workflow
 // publish-site.yml) after every publish, once per prototype in its gallery.
 // It upserts one row in public.prototypes per shared branch so the prototype
 // appears in the library with comments, replies, upvotes and attachments, and
@@ -27,7 +27,7 @@ type Payload = {
 };
 
 const BOT_EMAIL = (Deno.env.get("MANTL_BOT_EMAIL") ?? "prototyping-in-mantl@alkami.com").trim().toLowerCase();
-const BOT_NAME = "Prototyping in Mantl";
+const BOT_NAME = "Prototyping in MANTL";
 const THUMBNAIL_BUCKET = "prototype-thumbnails";
 const THUMBNAIL_LIMIT = 4 * 1024 * 1024;
 // The library's viewer shows its sign-in card for this prefix (ViewerPage.tsx,
@@ -153,7 +153,7 @@ Deno.serve(async (request) => {
 
     const thumbnailUrl = payload.archived ? (existing?.thumbnail_url as string | null) ?? null : await storeThumbnail(admin, supabaseUrl, payload) ?? (existing?.thumbnail_url as string | null) ?? null;
     const description = [
-      `Shared from Prototyping in Mantl by ${payload.author}.`,
+      `Shared from Prototyping in MANTL by ${payload.author}.`,
       payload.pages ? `${payload.pages} recorded page${payload.pages === 1 ? "" : "s"}.` : null,
       "Pages open and interact; nothing saves.",
     ].filter(Boolean).join(" ");
@@ -201,7 +201,7 @@ Deno.serve(async (request) => {
       // The library pins a prototype's first comment by its builder; this one
       // carries the links a reviewer needs.
       const intro = [
-        `${payload.author} shared this from Prototyping in Mantl${payload.pages ? ` (${payload.pages} recorded page${payload.pages === 1 ? "" : "s"})` : ""}.`,
+        `${payload.author} shared this from Prototyping in MANTL${payload.pages ? ` (${payload.pages} recorded page${payload.pages === 1 ? "" : "s"})` : ""}.`,
         payload.handoffUrl ? `Handoff notes: ${payload.handoffUrl}` : null,
         `Code: ${payload.codeUrl}`,
         `Gallery: ${payload.galleryUrl}`,

@@ -73,9 +73,9 @@ const brands: Record<PlatformId, {
     button: "bg-marine-5 hover:bg-marine-6 active:bg-marine-7",
     groupButton: "bg-marine-5 group-hover/brand:bg-marine-6",
     badge: "bg-marine-0 text-marine-8",
-    thing: "Mantl prototype",
-    panelTitle: () => "This is a Mantl prototype",
-    panelBody: "A clickable recording of the real Console, published from Prototyping in Mantl.",
+    thing: "MANTL prototype",
+    panelTitle: () => "This is a MANTL prototype",
+    panelBody: "A clickable recording of the real Console, published from Prototyping in MANTL.",
     access: () => "You’ll need to be signed in to GitHub with myfintech access. The preview lives on a private GitHub Pages site.",
   },
 };

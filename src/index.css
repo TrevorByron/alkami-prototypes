@@ -210,29 +210,6 @@
     --shadow-pixel: 4px 4px 0 0 hsl(var(--color-abyss-9) / 0.45);
   }
 
-  /* Types a phrase out a letter at a time (set --chars to its length), holds
-     it, then starts again; .pixel-caret blinks after it, and .pixel-reply
-     appears once the typing is done. */
-  .pixel-type {
-    display: inline-block;
-    overflow: hidden;
-    white-space: nowrap;
-    vertical-align: bottom;
-    animation: pixel-type 4.5s infinite;
-  }
-  .pixel-caret {
-    display: inline-block;
-    width: 0.5ch;
-    height: 1em;
-    margin-left: 1px;
-    vertical-align: text-bottom;
-    background: hsl(var(--color-abyss-9));
-    animation: pixel-blink 1.1s steps(2, start) infinite;
-  }
-  .pixel-reply {
-    animation: pixel-reply 4.5s infinite;
-  }
-
   /* The corner critter (PixelRunner) bobs in two hard steps while it waits. */
   .pixel-critter-idle {
     animation: pixel-bob 1.4s steps(1, end) infinite;
@@ -270,18 +247,8 @@
     50% { transform: translateY(-2px); }
   }
 
-  @keyframes pixel-type {
-    from { width: 0; animation-timing-function: steps(var(--chars), end); }
-    45%, 100% { width: calc(var(--chars) * 1ch); }
-  }
-
-  @keyframes pixel-reply {
-    0%, 55% { opacity: 0; }
-    60%, 100% { opacity: 1; }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .pixel-cursor::after, .pixel-type, .pixel-caret, .pixel-reply, .pixel-critter-idle { animation: none; }
+    .pixel-cursor::after, .pixel-critter-idle { animation: none; }
     .pixel-lift, .pixel-lift:hover, .pixel-lift:focus-within { transform: none; transition: none; }
   }
 }

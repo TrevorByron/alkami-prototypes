@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import type { PrototypeSummary } from "@/lib/types";
 
 // The ways into a prototype that opens in its own tab: the site itself, and
-// for Prototyping in Mantl its handoff notes and code. Each opens a new tab;
+// for Prototyping in MANTL its handoff notes and code. Each opens a new tab;
 // the external-link icon on Open says so, where the library's in-app Open
 // (to the viewer) has no icon.
 export function NewTabLinks({ prototype, size }: { prototype: PrototypeSummary; size?: "lg" }) {
