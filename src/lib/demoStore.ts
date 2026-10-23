@@ -57,6 +57,10 @@ export function updateDemoPrototypeTags(id: string, tags: string[]) {
   write(prototypesKey, read<PrototypeSummary>(prototypesKey).map((prototype) => prototype.id === id ? { ...prototype, tags, updated_at: now() } : prototype));
 }
 
+export function updateDemoPrototype(id: string, fields: Partial<PrototypeSummary>) {
+  write(prototypesKey, read<PrototypeSummary>(prototypesKey).map((prototype) => prototype.id === id ? { ...prototype, ...fields, updated_at: now() } : prototype));
+}
+
 export function deleteDemoPrototype(id: string) {
   write(prototypesKey, read<PrototypeSummary>(prototypesKey).filter((prototype) => prototype.id !== id));
   const commentIds = new Set(read<CommentRecord>(commentsKey).filter((comment) => comment.prototype_id === id).map((comment) => comment.id));

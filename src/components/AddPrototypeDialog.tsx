@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { checkPrototypeUrl, normalizeUrl } from "@/lib/checkUrl";
 import { isDemoMode } from "@/lib/demoMode";
-import { isOwnApp } from "@/lib/selfEmbed";
 import { addDemoComment, createDemoPrototype } from "@/lib/demoStore";
 import { supabase } from "@/lib/supabase";
 import { prototypeTags, type PrototypeTagId } from "@/lib/tags";
@@ -21,12 +21,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { UserIdentity } from "@/components/UserIdentity";
 
 type Props = { open: boolean; onOpenChange: (open: boolean) => void; onCreated: () => void };
-
-function normalizeUrl(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-}
 
 export function AddPrototypeDialog({ open, onOpenChange, onCreated }: Props) {
   const navigate = useNavigate();
@@ -47,52 +41,12 @@ export function AddPrototypeDialog({ open, onOpenChange, onCreated }: Props) {
   async function checkUrl() {
     const normalized = normalizeUrl(url);
     if (!normalized) return;
-    try {
-      new URL(normalized);
-    } catch {
-      setFormError("Enter a valid URL.");
-      return;
-    }
-    if (isOwnApp(normalized)) {
-      setFormError("This is the Alkami Prototypes app itself. Add a prototype hosted somewhere else.");
-      return;
-    }
     setChecking(true); setFormError(null); setCheck(null);
-    if (isDemoMode) {
-      const parsed = new URL(normalized);
-      const blocked = /(^|\.)github\.com$/i.test(parsed.hostname);
-      const demoCheck: EmbedCheck = { embeddable: !blocked, reason: blocked ? "GitHub prevents embedding in another application." : "Demo mode marked this URL as embeddable.", final_url: normalized, title: parsed.hostname, favicon_url: `${parsed.origin}/favicon.ico`, requires_sign_in: false };
-      setUrl(normalized); setCheck(demoCheck);
-      if (!name.trim()) setName(parsed.hostname);
-      setChecking(false);
-      return;
-    }
-    const { data, error } = await supabase?.functions.invoke<EmbedCheck>("check-embed", { body: { url: normalized } }) ?? { data: null, error: new Error("Supabase is not configured.") };
-    if (error || !data) {
-      const checkerUnavailable = error?.message.toLowerCase().includes("failed to send a request") || error?.message.toLowerCase().includes("fetcherror");
-      if (checkerUnavailable) {
-        const parsed = new URL(normalized);
-        const fallbackCheck: EmbedCheck = {
-          embeddable: false,
-          reason: "The live embed checker is unavailable, so this prototype will open in a new tab for now.",
-          final_url: normalized,
-          title: parsed.hostname,
-          favicon_url: `${parsed.origin}/favicon.ico`,
-          requires_sign_in: false,
-        };
-        setUrl(normalized);
-        setCheck(fallbackCheck);
-        if (!name.trim()) setName(parsed.hostname.replace(/^www\./i, ""));
-        setFormError(null);
-      } else {
-        setFormError(error?.message ?? "We could not check this URL.");
-      }
-      setChecking(false);
-      return;
-    }
-    setUrl(normalized); setCheck(data);
-    if (!name.trim() && data.title) setName(data.title);
+    const result = await checkPrototypeUrl(normalized);
     setChecking(false);
+    if ("error" in result) { setFormError(result.error); return; }
+    setUrl(normalized); setCheck(result.check);
+    if (!name.trim()) setName(result.check.title || new URL(normalized).hostname.replace(/^www\./i, ""));
   }
 
   async function savePrototype(event: FormEvent<HTMLFormElement>) {
