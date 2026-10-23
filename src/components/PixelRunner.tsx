@@ -11,7 +11,8 @@ import { fetchLeaderboard, placeOnBoard, recordRunnerScore, type ScoreEntry } fr
 // the middle of the screen and starts running: jump the crates, grab the
 // Alkami A coins. Space, up arrow, click or tap jumps; Esc leaves. Each
 // member's best run is saved to Supabase, and an arcade-style high-score
-// table (top 5) shows before each run and after it ends.
+// table (top 5) shows before each run and after it ends, with a compact copy
+// in the corner during the run where the player's row climbs as they score.
 
 // Sprites are character grids, one character per pixel; "." is empty.
 // The critter is the MANTL mark come to life: the blue tile (B) with its
@@ -269,6 +270,31 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
       ctx.fillText(value, x, yPos);
     };
 
+    // During the run: a compact table in the top-left corner, with this run
+    // placed live so the player can see who they are about to pass.
+    const drawMiniBoard = () => {
+      const rows = score > 0 ? placeOnBoard(board, { id: me, name: myName, score }) : board;
+      const rowH = 18;
+      const panelW = 220;
+      const panelH = 34 + Math.max(rows.length, 1) * rowH + 6;
+      const left = 20;
+      const topY = 20;
+      ctx.fillStyle = palette.ink;
+      ctx.fillRect(left - 3, topY - 3, panelW + 6, panelH + 6);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(left, topY, panelW, panelH);
+      text("High scores", left + panelW / 2, topY + 20, 12, palette.ink);
+      if (!rows.length) text("Be the first!", left + panelW / 2, topY + 44, 10, palette.muted);
+      rows.forEach((row, index) => {
+        const color = row.id === me ? ALKAMI_A_COLORS.k : palette.ink;
+        const name = displayName(row.name);
+        const rowY = topY + 42 + index * rowH;
+        text(String(index + 1), left + 12, rowY, 10, color, "left");
+        text(name.length > 14 ? `${name.slice(0, 13)}…` : name, left + 32, rowY, 10, color, "left");
+        text(String(row.id === me ? Math.max(row.score, score) : row.score), left + panelW - 12, rowY, 10, color, "right");
+      });
+    };
+
     // The arcade high-score table, drawn as a white pixel panel whose bottom
     // sits just above the critter's head.
     const ranks = ["1st", "2nd", "3rd", "4th", "5th"];
@@ -347,6 +373,7 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
       text(String(highScore), width / 2 + 140, barY + 2, 24, palette.ink);
 
       if (state === "ready" || state === "over") drawBoard(ground);
+      if (state === "playing") drawMiniBoard();
       if (state === "ready") text("Space or tap to start", width / 2, ground + 56, 14, palette.muted);
       if (state === "playing" && playTime < 2.5) text("Space or tap to jump", width / 2, ground + 56, 14, palette.muted);
       if (state === "over") text("Space or tap to try again · Esc to leave", width / 2, ground + 56, 14, palette.muted);
