@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { Loader2, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { checkPrototypeUrl, normalizeUrl } from "@/lib/checkUrl";
 import { isDemoMode } from "@/lib/demoMode";
-import { isOwnApp } from "@/lib/selfEmbed";
-import { createDemoPrototype } from "@/lib/demoStore";
+import { addDemoComment, createDemoPrototype } from "@/lib/demoStore";
 import { supabase } from "@/lib/supabase";
 import { prototypeTags, type PrototypeTagId } from "@/lib/tags";
 import type { EmbedCheck } from "@/lib/types";
@@ -20,12 +21,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { UserIdentity } from "@/components/UserIdentity";
 
 type Props = { open: boolean; onOpenChange: (open: boolean) => void; onCreated: () => void };
-
-function normalizeUrl(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-}
 
 export function AddPrototypeDialog({ open, onOpenChange, onCreated }: Props) {
   const navigate = useNavigate();
@@ -46,52 +41,12 @@ export function AddPrototypeDialog({ open, onOpenChange, onCreated }: Props) {
   async function checkUrl() {
     const normalized = normalizeUrl(url);
     if (!normalized) return;
-    try {
-      new URL(normalized);
-    } catch {
-      setFormError("Enter a valid URL.");
-      return;
-    }
-    if (isOwnApp(normalized)) {
-      setFormError("This is the Alkami Prototypes app itself. Add a prototype hosted somewhere else.");
-      return;
-    }
     setChecking(true); setFormError(null); setCheck(null);
-    if (isDemoMode) {
-      const parsed = new URL(normalized);
-      const blocked = /(^|\.)github\.com$/i.test(parsed.hostname);
-      const demoCheck: EmbedCheck = { embeddable: !blocked, reason: blocked ? "GitHub prevents embedding in another application." : "Demo mode marked this URL as embeddable.", final_url: normalized, title: parsed.hostname, favicon_url: `${parsed.origin}/favicon.ico`, requires_sign_in: false };
-      setUrl(normalized); setCheck(demoCheck);
-      if (!name.trim()) setName(parsed.hostname);
-      setChecking(false);
-      return;
-    }
-    const { data, error } = await supabase?.functions.invoke<EmbedCheck>("check-embed", { body: { url: normalized } }) ?? { data: null, error: new Error("Supabase is not configured.") };
-    if (error || !data) {
-      const checkerUnavailable = error?.message.toLowerCase().includes("failed to send a request") || error?.message.toLowerCase().includes("fetcherror");
-      if (checkerUnavailable) {
-        const parsed = new URL(normalized);
-        const fallbackCheck: EmbedCheck = {
-          embeddable: false,
-          reason: "The live embed checker is unavailable, so this prototype will open in a new tab for now.",
-          final_url: normalized,
-          title: parsed.hostname,
-          favicon_url: `${parsed.origin}/favicon.ico`,
-          requires_sign_in: false,
-        };
-        setUrl(normalized);
-        setCheck(fallbackCheck);
-        if (!name.trim()) setName(parsed.hostname.replace(/^www\./i, ""));
-        setFormError(null);
-      } else {
-        setFormError(error?.message ?? "We could not check this URL.");
-      }
-      setChecking(false);
-      return;
-    }
-    setUrl(normalized); setCheck(data);
-    if (!name.trim() && data.title) setName(data.title);
+    const result = await checkPrototypeUrl(normalized);
     setChecking(false);
+    if ("error" in result) { setFormError(result.error); return; }
+    setUrl(normalized); setCheck(result.check);
+    if (!name.trim()) setName(result.check.title || new URL(normalized).hostname.replace(/^www\./i, ""));
   }
 
   async function savePrototype(event: FormEvent<HTMLFormElement>) {
@@ -102,6 +57,7 @@ export function AddPrototypeDialog({ open, onOpenChange, onCreated }: Props) {
     setSaving(true); setFormError(null);
     if (isDemoMode && user) {
       const demoPrototype = createDemoPrototype({ name: name.trim(), url: normalizeUrl(url), description: description.trim() || null, owner_id: user.id, owner_slack_id: null, owner_name: profile?.name ?? user.email ?? "Alkami teammate", slack_channel_id: null, slack_channel_name: null, embed_mode: check.embeddable ? "live" : "new_tab", embed_reason: check.reason, favicon_url: check.favicon_url, tags });
+      if (demoPrototype.description) addDemoComment({ prototype_id: demoPrototype.id, body: demoPrototype.description, page_url: null, screen_label: null, viewport: null, x_pct: null, y_pct: null, selector: null, scroll_y: null, snapshot_url: null });
       onCreated(); reset(); onOpenChange(false); navigate(`/p/${demoPrototype.id}`);
       return;
     }
@@ -113,6 +69,13 @@ export function AddPrototypeDialog({ open, onOpenChange, onCreated }: Props) {
       tags, created_by: user.id,
     }).select("id").single();
     if (error || !data) { setFormError(error?.message ?? "We could not save this prototype."); setSaving(false); return; }
+    // The description opens the comment thread as the builder's first comment.
+    // The prototype is already saved, so a failure here only warns.
+    const descriptionText = description.trim();
+    if (descriptionText) {
+      const { error: commentError } = await supabase.from("comments").insert({ prototype_id: data.id, author_id: user.id, body: descriptionText });
+      if (commentError) toast.error(`Prototype added, but the description could not be posted as a comment: ${commentError.message}`);
+    }
     onCreated(); reset(); onOpenChange(false); navigate(`/p/${data.id}`);
   }
 
