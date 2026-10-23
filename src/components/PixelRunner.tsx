@@ -6,7 +6,7 @@ import { ALKAMI_A_COLORS, ALKAMI_A_PIXELS } from "@/lib/alkamiMark";
 import { displayName } from "@/lib/names";
 import { fetchLeaderboard, placeOnBoard, recordRunnerScore, type ScoreEntry } from "@/lib/runnerScores";
 
-// An easter egg: a 20px pixel critter now and then hops up into the library's
+// An easter egg: a 30px pixel critter now and then hops up into the library's
 // bottom-left corner, bounces there for a while, then ducks back out of view. Click it and the page fades behind a veil while the critter hops to
 // the middle of the screen and starts running: jump the crates, grab the
 // Alkami A coins. Space, up arrow, click or tap jumps; Esc leaves. Each
@@ -17,8 +17,8 @@ import { fetchLeaderboard, placeOnBoard, recordRunnerScore, type ScoreEntry } fr
 // Sprites are character grids, one character per pixel; "." is empty.
 // The critter is the MANTL mark come to life: the blue tile (B) with its
 // white M (W), the light sparkle (*) up top as an antenna, two eyes (K)
-// peeking over the M, and feet (D).
-const CRITTER_TOP = [
+// peeking over the M, arms (A) and feet (D).
+const CRITTER_BODY = [
   ".BBBBBBBBB*.",
   "BBBBBBBBB***",
   "BBWBBBBBBW*B",
@@ -28,17 +28,32 @@ const CRITTER_TOP = [
   "BBWBBBBBBWBB",
   ".BBBBBBBBBB.",
 ];
+// An arm pose is the set of "row:reach" cells lit on one side of the body,
+// where reach 1 touches the body and reach 2 is one pixel further out.
+type ArmPose = string[];
+const ARMS: Record<"down" | "forward" | "back" | "up", ArmPose> = {
+  down: ["4:1", "5:1", "6:2"],
+  forward: ["4:1", "3:2"],
+  back: ["5:1", "6:2"],
+  up: ["3:1", "2:2", "1:2"],
+};
+function critter(left: ArmPose, right: ArmPose, legs: [string, string]) {
+  const lit = (pose: ArmPose, row: number, reach: number) => (pose.includes(`${row}:${reach}`) ? "A" : ".");
+  const body = CRITTER_BODY.map((row, index) => lit(left, index, 2) + lit(left, index, 1) + row + lit(right, index, 1) + lit(right, index, 2));
+  return [...body, ...legs.map((row) => `..${row}..`)];
+}
 const CRITTER_FRAMES = {
-  stand: [...CRITTER_TOP, "...D....D...", "..DD....DD.."],
-  stride: [...CRITTER_TOP, "....D..D....", "....DD.DD..."],
-  jump: [...CRITTER_TOP, "..DD....DD..", "............"],
+  stand: critter(ARMS.down, ARMS.down, ["...D....D...", "..DD....DD.."]),
+  strideA: critter(ARMS.forward, ARMS.back, ["....D..D....", "....DD.DD..."]),
+  strideB: critter(ARMS.back, ARMS.forward, ["...D....D...", "..DD....DD.."]),
+  jump: critter(ARMS.up, ARMS.up, ["..DD....DD..", "............"]),
 };
 // C edge, c fill, x brace.
 const CRATE = ["CCCCCCCC", "CccccccC", "CxccccxC", "CcxccxcC", "CccxxccC", "CcxccxcC", "CxccccxC", "CCCCCCCC"];
 
-const CRITTER_W = 12;
+const CRITTER_W = 16;
 const CRITTER_H = 10;
-const IDLE_SCALE = 2; // 20px tall in the corner
+const IDLE_SCALE = 3; // 30px tall in the corner, feet on the window's bottom edge
 const GAME_SCALE = 4;
 const CRATE_SCALE = 4;
 const COIN_SCALE = 2;
@@ -97,7 +112,7 @@ export function PixelRunner() {
   return (
     <>
       {playing ? null : (
-        <button ref={buttonRef} type="button" onClick={open} className="pixel-critter-peek fixed bottom-4 left-4 z-40 rounded-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marine-2" aria-label="A small pixel creature. Click it to play a game." title="Psst">
+        <button ref={buttonRef} type="button" onClick={open} className="pixel-critter-peek fixed bottom-0 left-10 z-40 rounded-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marine-2" aria-label="A small pixel creature. Click it to play a game." title="Psst">
           <span className="pixel-critter-idle block"><CritterIcon /></span>
         </button>
       )}
@@ -107,7 +122,7 @@ export function PixelRunner() {
 }
 
 function CritterIcon() {
-  const colors: Record<string, string> = { B: "hsl(var(--color-marine-6))", D: "hsl(var(--color-marine-8))", W: "#ffffff", K: "hsl(var(--color-abyss-9))", "*": "hsl(var(--color-marine-2))" };
+  const colors: Record<string, string> = { B: "hsl(var(--color-marine-6))", D: "hsl(var(--color-marine-8))", A: "hsl(var(--color-marine-8))", W: "#ffffff", K: "hsl(var(--color-abyss-9))", "*": "hsl(var(--color-marine-2))" };
   const rects = CRITTER_FRAMES.stand.flatMap((row, y) => [...row].flatMap((cell, x) => (colors[cell] ? [{ x, y, fill: colors[cell] }] : [])));
   return (
     <svg viewBox={`0 0 ${CRITTER_W} ${CRITTER_H}`} width={CRITTER_W * IDLE_SCALE} height={CRITTER_H * IDLE_SCALE} shapeRendering="crispEdges" aria-hidden className="block">
@@ -129,7 +144,7 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
     if (!canvas || !ctx) return;
 
     const palette = {
-      critter: { B: token("marine-6"), D: token("marine-8"), W: "#ffffff", K: token("abyss-9"), "*": token("marine-2") } as Record<string, string>,
+      critter: { B: token("marine-6"), D: token("marine-8"), A: token("marine-8"), W: "#ffffff", K: token("abyss-9"), "*": token("marine-2") } as Record<string, string>,
       crate: { C: token("carbon-7"), c: token("carbon-2"), x: token("carbon-5") } as Record<string, string>,
       ground: token("carbon-4"),
       groundDash: token("carbon-3"),
@@ -237,8 +252,9 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
       sparks = sparks.filter((item) => item.age < 0.4);
 
       // Hit boxes are a little smaller than the sprites, so near misses feel fair.
-      const left = critterX() + 6;
-      const right = critterX() + critterW - 6;
+      // The arms stick out two pixels each side; they don't count as a hit.
+      const left = critterX() + 14;
+      const right = critterX() + critterW - 14;
       const bottom = y;
       const top = y + critterH - 6;
       for (const item of obstacles) {
@@ -358,7 +374,7 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
         drawSprite(ctx, CRITTER_FRAMES.jump, palette.critter, x, feet - CRITTER_H * scale, Math.max(1, Math.round(scale)));
         if (t >= 1) { state = "ready"; }
       } else {
-        const frame = state === "over" ? CRITTER_FRAMES.stand : y > 0 ? CRITTER_FRAMES.jump : Math.floor(distance / 40) % 2 ? CRITTER_FRAMES.stride : CRITTER_FRAMES.stand;
+        const frame = state === "over" ? CRITTER_FRAMES.stand : y > 0 ? CRITTER_FRAMES.jump : Math.floor(distance / 40) % 2 ? CRITTER_FRAMES.strideA : CRITTER_FRAMES.strideB;
         drawSprite(ctx, frame, palette.critter, critterX(), ground - y - critterH, GAME_SCALE);
       }
 
