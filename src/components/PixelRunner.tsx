@@ -412,15 +412,15 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
         drawSprite(ctx, frame, palette.critter, critterX(), ground - y - critterH, GAME_SCALE);
       }
 
-      // The arcade top bar: this run's score (with the A coin) and the high
-      // score to beat.
+      // This run's score, centred above the play area with the A coin beside
+      // it. The high scores live in the corner table.
       const barY = ground - 300;
-      const highScore = Math.max(board[0]?.score ?? 0, score);
-      text("Score", width / 2 - 140, barY - 30, 12, palette.muted);
-      drawSprite(ctx, ALKAMI_A_PIXELS, ALKAMI_A_COLORS, width / 2 - 140 - 44, barY - 22, COIN_SCALE);
-      text(String(score), width / 2 - 140 + 16, barY + 2, 24, palette.ink);
-      text("High score", width / 2 + 140, barY - 30, 12, palette.muted);
-      text(String(highScore), width / 2 + 140, barY + 2, 24, palette.ink);
+      ctx.font = `32px Silkscreen, "Fira Mono", monospace`;
+      const scoreWidth = ctx.measureText(String(score)).width;
+      const groupLeft = width / 2 - (coinSize + 12 + scoreWidth) / 2;
+      text("Score", width / 2, barY - 40, 12, palette.muted);
+      drawSprite(ctx, ALKAMI_A_PIXELS, ALKAMI_A_COLORS, groupLeft, barY - 28, COIN_SCALE);
+      text(String(score), groupLeft + coinSize + 12, barY + 2, 32, palette.ink, "left");
       // A target to chase while running.
       if (state === "playing") {
         const target = nextToBeat();
