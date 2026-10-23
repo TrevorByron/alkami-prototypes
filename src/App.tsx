@@ -207,7 +207,7 @@ function PrototypeCard({ prototype }: { prototype: PrototypeSummary }) {
         </div>
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-2 [&_svg]:!h-4 [&_svg]:!w-4">
           {newTabOnly ? <NewTabLinks prototype={prototype} /> : <>
-            <Button asChild><Link to={viewerUrl}>Open preview</Link></Button>
+            <Button asChild><Link to={viewerUrl}>Open</Link></Button>
             <Button asChild variant="outline"><a href={prototype.url} target="_blank" rel="noopener noreferrer"><ExternalLink />New tab</a></Button>
           </>}
         </div>

@@ -7,12 +7,14 @@ import { Card } from "@/components/ui/card";
 import type { PrototypeSummary } from "@/lib/types";
 
 // The ways into a prototype that opens in its own tab: the site itself, and
-// for Prototyping in Mantl its handoff notes and code. Each opens a new tab.
+// for Prototyping in Mantl its handoff notes and code. Each opens a new tab;
+// the external-link icon on Open says so, where the library's in-app Open
+// (to the viewer) has no icon.
 export function NewTabLinks({ prototype, size }: { prototype: PrototypeSummary; size?: "lg" }) {
   const meta = prototype.source === "mantl" ? prototype.source_meta : null;
   return (
     <>
-      <Button asChild size={size}><a href={prototype.url} target="_blank" rel="noopener noreferrer"><ExternalLink />Open in new tab</a></Button>
+      <Button asChild size={size}><a href={prototype.url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${prototype.name} in a new tab`}><ExternalLink />Open</a></Button>
       {meta?.handoff_url ? <Button asChild variant="outline" size={size}><a href={meta.handoff_url} target="_blank" rel="noopener noreferrer"><FileText />Handoff</a></Button> : null}
       {meta?.code_url ? <Button asChild variant="outline" size={size}><a href={meta.code_url} target="_blank" rel="noopener noreferrer"><Code2 />Code</a></Button> : null}
     </>
