@@ -1,21 +1,18 @@
 import { useState } from "react";
 import { Link, Route, Routes } from "react-router-dom";
-import { ArrowUpRight, Hammer, Tag, LayoutGrid, Loader2, MessageSquare, Plus, RotateCcw, Search, Trash2, Users } from "lucide-react";
-import { toast } from "sonner";
+import { ExternalLink, Hammer, LayoutGrid, Plus, RotateCcw, Search, Users } from "lucide-react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AddPrototypeDialog } from "@/components/AddPrototypeDialog";
 import { AppMark } from "@/components/AppMark";
-import { PlatformBadge, PlatformMark, PlatformPreview } from "@/components/Platform";
+import { PlatformPreview } from "@/components/Platform";
 import { HowItWorks } from "@/components/HowItWorks";
-import { TagEditor } from "@/components/TagEditor";
 import { UserAvatar, UserIdentity } from "@/components/UserIdentity";
 import { VibeCodeDialog } from "@/components/VibeCodeDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SelectionPill } from "@/components/ui/selection-pill";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -72,7 +69,7 @@ function Library() {
   const [query, setQuery] = useState("");
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [addOpen, setAddOpen] = useState(false);
-  const { prototypes, loading, error, refresh, remove, patch } = usePrototypes();
+  const { prototypes, loading, error, refresh } = usePrototypes();
   const matchesQuery = (prototype: PrototypeSummary) => `${prototype.name} ${prototype.url} ${prototype.owner_name} ${prototype.tags.map((id) => tagInfo(id)?.label ?? "").join(" ")}`.toLowerCase().includes(query.toLowerCase());
   // Selecting several tags shows prototypes that have any of them.
   const visible = prototypes.filter((prototype) => matchesQuery(prototype) && (!tagFilter.length || prototype.tags.some((id) => tagFilter.includes(id))));
@@ -118,7 +115,7 @@ function Library() {
           </div>
         </div>
 
-        {loading ? <SkeletonGrid /> : error ? <LibraryError message={error} onRetry={() => void refresh()} /> : visible.length ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visible.map((prototype) => <PrototypeCard key={prototype.id} prototype={prototype} onDelete={remove} onTagsChange={(tags) => patch(prototype.id, { tags })} />)}</div> : filtering ? <EmptySearch /> : <EmptyLibrary onAdd={() => setAddOpen(true)} />}
+        {loading ? <SkeletonGrid /> : error ? <LibraryError message={error} onRetry={() => void refresh()} /> : visible.length ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visible.map((prototype) => <PrototypeCard key={prototype.id} prototype={prototype} />)}</div> : filtering ? <EmptySearch /> : <EmptyLibrary onAdd={() => setAddOpen(true)} />}
       </main>
       <AddPrototypeDialog open={addOpen} onOpenChange={setAddOpen} onCreated={() => void refresh()} />
     </div>
@@ -153,57 +150,32 @@ function ContributorsCard({ contributors }: { contributors: Contributor[] }) {
   );
 }
 
-function PrototypeCard({ prototype, onDelete, onTagsChange }: { prototype: PrototypeSummary; onDelete: (id: string) => Promise<string | null>; onTagsChange: (tags: string[]) => void }) {
-  const host = (() => { try { return new URL(prototype.url).host; } catch { return prototype.url; } })();
+// The library card is the preview, who built it and the two ways in. The
+// description, tags and delete live in the viewer.
+function PrototypeCard({ prototype }: { prototype: PrototypeSummary }) {
   const platform = detectPlatform(prototype.url, prototype.embed_mode);
-  const external = Boolean(platform?.external);
-  const [faviconFailed, setFaviconFailed] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  async function handleDelete() {
-    setDeleting(true);
-    const error = await onDelete(prototype.id);
-    setDeleting(false);
-    if (error) {
-      toast.error(error);
-      return;
-    }
-    setDeleteOpen(false);
-    toast.success("Prototype deleted");
-  }
+  const viewerUrl = `/p/${prototype.id}`;
+  const comments = prototype.open_comment_count;
 
   return (
-    <Card className="pixel-lift relative overflow-hidden hover:border-marine-2 focus-within:border-marine-2">
-      {platform && external ? <PlatformPreview platform={platform} url={prototype.url} /> : null}
-      <Link to={`/p/${prototype.id}`} className="group block focus-visible:outline-none">
-        {external ? null : <div className="relative h-36 overflow-hidden border-b-2 border-carbon-2 bg-carbon-1">
-          {prototype.embed_mode === "live" ? <div className="pointer-events-none absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.3] bg-abyss-0"><iframe title={`${prototype.name} preview`} src={prototype.url} loading="lazy" tabIndex={-1} className="h-full w-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads" /></div> : <div className="flex h-full items-center justify-center text-xs text-abyss-5">Opens in a new tab</div>}
-        </div>}
-        <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-4">
-          <div className="flex min-w-0 items-center gap-2">
-            {platform ? <PlatformMark platform={platform} /> : <div className="pixel-notch flex h-10 w-10 shrink-0 items-center justify-center bg-carbon-1 text-base font-bold text-abyss-7">{prototype.favicon_url && !faviconFailed ? <img src={prototype.favicon_url} alt="" className="h-5 w-5" onError={() => setFaviconFailed(true)} /> : host.slice(0, 1).toUpperCase()}</div>}
-            <div className="min-w-0"><h3 className="truncate text-base leading-5 text-abyss-9 group-hover:text-marine-5">{prototype.name}</h3><p className="truncate text-xs text-abyss-5">{platform ? platform.subtitle : host}</p></div>
-          </div>
-          <ArrowUpRight className="h-5 w-5 shrink-0 text-abyss-5 group-hover:text-marine-5" />
-        </div>
-        <div className="px-6 pb-4">
-          {prototype.description ? <p className="mb-2 line-clamp-2 text-sm text-abyss-7">{prototype.description}</p> : null}
-          {prototype.tags.length ? <div className="mb-2 flex flex-wrap gap-1">{prototype.tags.map((id) => tagInfo(id)).filter(Boolean).map((tag) => <Badge key={tag!.id} variant="muted"><span aria-hidden>{tag!.emoji}</span>{tag!.label}</Badge>)}</div> : null}
-          <div className="mt-2 flex items-center justify-between gap-2 border-t-2 border-dashed border-carbon-2 pt-4">
-            <div className="flex min-w-0 items-center gap-2"><UserAvatar id={prototype.owner_id} name={prototype.owner_name} /><div className="min-w-0"><p className="truncate text-sm font-medium text-abyss-9">{displayName(prototype.owner_name)}</p><p className="text-xs text-abyss-5">Updated {formatRelativeTime(prototype.updated_at)}</p></div></div>
-            <div className="flex shrink-0 items-center gap-2"><Badge variant={prototype.open_comment_count ? "default" : "muted"} aria-label={`${prototype.open_comment_count} open comments`}><MessageSquare />{prototype.open_comment_count}</Badge>{platform ? <PlatformBadge platform={platform} /> : prototype.embed_mode === "new_tab" && <Badge variant="muted">New tab only</Badge>}</div>
-          </div>
-        </div>
+    <Card className="pixel-lift group flex flex-col overflow-hidden hover:border-marine-2 focus-within:border-marine-2">
+      <Link to={viewerUrl} className="relative block h-44 overflow-hidden border-b-2 border-carbon-2 bg-carbon-1 focus-visible:outline-none" aria-label={`Open ${prototype.name}`}>
+        {platform?.external ? <PlatformPreview platform={platform} /> : prototype.embed_mode === "live" ? <div className="pointer-events-none absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.3] bg-abyss-0"><iframe title={`${prototype.name} preview`} src={prototype.url} loading="lazy" tabIndex={-1} className="h-full w-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads" /></div> : <div className="flex h-full items-center justify-center text-xs text-abyss-5">Opens in a new tab</div>}
       </Link>
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <div className="absolute right-14 top-4 z-20"><TagEditor prototypeId={prototype.id} tags={prototype.tags} onChange={onTagsChange} trigger={<Button type="button" variant="secondary" size="icon" aria-label={`Edit tags for ${prototype.name}`} title="Edit tags"><Tag /></Button>} /></div>
-        <DialogTrigger asChild><Button type="button" variant="secondary" size="icon" className="absolute right-4 top-4 z-20 hover:border-chaparral-5 hover:bg-chaparral-0 hover:text-chaparral-5" aria-label={`Delete ${prototype.name}`}><Trash2 /></Button></DialogTrigger>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Delete this prototype?</DialogTitle><DialogDescription>This will remove <span className="font-medium text-abyss-9">{prototype.name}</span> from the shared library and delete its comments and replies. This cannot be undone.</DialogDescription></DialogHeader>
-          <DialogFooter><Button type="button" variant="secondary" size="lg" onClick={() => setDeleteOpen(false)} disabled={deleting}>Cancel</Button><Button type="button" variant="danger" size="lg" onClick={() => void handleDelete()} disabled={deleting}>{deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}{deleting ? "Deleting…" : "Delete prototype"}</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <div className="flex flex-1 flex-col gap-2 px-6 pb-4 pt-4">
+        <h3 className="truncate text-base leading-5 text-abyss-9">{prototype.name}</h3>
+        <div className="flex min-w-0 items-center gap-2 text-xs text-abyss-5">
+          <UserAvatar id={prototype.owner_id} name={prototype.owner_name} className="h-6 w-6 text-xs" />
+          <span className="truncate">{displayName(prototype.owner_name)}</span>
+          <span aria-hidden>·</span>
+          <span className="shrink-0">{formatRelativeTime(prototype.updated_at)}</span>
+          {comments ? <><span aria-hidden>·</span><span className="shrink-0">{comments} comment{comments === 1 ? "" : "s"}</span></> : null}
+        </div>
+        <div className="mt-auto flex items-center gap-2 pt-3">
+          <Button asChild><Link to={viewerUrl}>Open preview</Link></Button>
+          <Button asChild variant="ghost"><a href={prototype.url} target="_blank" rel="noopener noreferrer"><ExternalLink />New tab</a></Button>
+        </div>
+      </div>
     </Card>
   );
 }
@@ -221,7 +193,7 @@ function EmptyLibrary({ onAdd }: { onAdd: () => void }) {
 }
 
 function SkeletonGrid() {
-  return <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{[1, 2, 3].map((item) => <Card key={item} className="overflow-hidden"><Skeleton className="h-36 rounded-none" /><div className="flex items-center gap-2 px-6 py-4"><Skeleton className="h-10 w-10" /><div className="space-y-2"><Skeleton className="h-4 w-36" /><Skeleton className="h-3 w-48" /></div></div><div className="px-6 pb-4"><Skeleton className="h-8 w-full" /></div></Card>)}</div>;
+  return <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{[1, 2, 3].map((item) => <Card key={item} className="overflow-hidden"><Skeleton className="h-44 rounded-none" /><div className="space-y-2 px-6 py-4"><Skeleton className="h-5 w-40" /><Skeleton className="h-4 w-56" /><Skeleton className="mt-4 h-8 w-28" /></div></Card>)}</div>;
 }
 
 function LibraryError({ message, onRetry }: { message: string; onRetry: () => void }) {
