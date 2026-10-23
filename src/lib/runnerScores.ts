@@ -23,9 +23,27 @@ export async function fetchLeaderboard(): Promise<ScoreEntry[] | null> {
   return data.map((row) => ({ id: row.id as string, name: row.name as string, score: row.runner_best as number }));
 }
 
+// The player's place among everyone: their saved best and how many members
+// have beaten it. Null when it can't be read (demo mode, no migration yet).
+export async function fetchMyStanding(userId: string | undefined): Promise<{ best: number; rank: number | null } | null> {
+  if (isDemoMode || !supabase || !userId) return null;
+  const mine = await supabase.from("profiles").select("runner_best").eq("id", userId).maybeSingle();
+  if (mine.error || !mine.data) return null;
+  const best = mine.data.runner_best as number;
+  if (best <= 0) return { best, rank: null };
+  const ahead = await supabase.from("profiles").select("id", { count: "exact", head: true }).gt("runner_best", best);
+  return { best, rank: ahead.error || ahead.count === null ? null : ahead.count + 1 };
+}
+
 export async function recordRunnerScore(score: number) {
   if (isDemoMode || !supabase || score <= 0) return;
   await supabase.rpc("record_runner_score", { p_score: score });
+}
+
+export function ordinal(rank: number) {
+  const tens = rank % 100;
+  if (tens >= 11 && tens <= 13) return `${rank}th`;
+  return `${rank}${({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[rank % 10] ?? "th"}`;
 }
 
 // Puts a finished run on the board: raises the player's own entry, or adds it,
