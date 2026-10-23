@@ -21,11 +21,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { AppMark } from "@/components/AppMark";
 import { PlatformBadge, PlatformPanel } from "@/components/Platform";
 import { HowItWorks } from "@/components/HowItWorks";
+import { NewTabOnlyPage } from "@/components/NewTabLinks";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { PrototypeActionsMenu } from "@/components/PrototypeActionsMenu";
 import { UserAvatar, UserIdentity } from "@/components/UserIdentity";
 import { findDescriptionComment } from "@/lib/descriptionComment";
-import { detectPlatform } from "@/lib/platforms";
+import { detectPlatform, opensInNewTabOnly } from "@/lib/platforms";
 import { displayName } from "@/lib/names";
 import { tagInfo } from "@/lib/tags";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -133,6 +134,7 @@ export function ViewerPage() {
 
   if (loading) return <ViewerLoading />;
   if (error || !prototype) return <ViewerError message={error ?? "Prototype not found."} />;
+  if (opensInNewTabOnly(prototype)) return <NewTabOnlyPage prototype={prototype} />;
 
   const scale = Math.min(1, Math.max(0.48, stageSize.width / viewport));
   const platform = detectPlatform(prototype.url, prototype.embed_mode);
@@ -337,13 +339,12 @@ function ViewerError({ message }: { message: string }) { return <div className="
 // Browsers hide whether a cross-origin frame loaded or was refused, so this
 // can't be detected at runtime. check-embed stores this reason when the URL
 // redirects to a sign-in provider, and access-controlled GitLab Pages sites
-// always do, so treat gitlab.io as one too. Private GitHub Pages sites (where
-// Prototyping in Mantl publishes) behave the same way.
+// always do, so treat gitlab.io as one too. (Private GitHub Pages sites never
+// reach the frame: they open in a new tab, see opensInNewTabOnly.)
 function needsSignIn(prototype: { url: string; embed_reason: string | null }) {
   if (prototype.embed_reason?.startsWith("This URL requires sign-in")) return true;
   try {
-    const host = new URL(prototype.url).hostname;
-    return host.endsWith(".gitlab.io") || host.endsWith(".pages.github.io");
+    return new URL(prototype.url).hostname.endsWith(".gitlab.io");
   } catch { return false; }
 }
 
