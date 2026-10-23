@@ -10,7 +10,7 @@ import type { EmbedMode } from "@/lib/types";
 // Private deployments bounce visitors to Replit sign-in (X-Frame-Options:
 // DENY), which check-embed records as new_tab.
 //
-// Mantl: previews published from Prototyping in Mantl (the shared GitHub
+// MANTL: previews published from Prototyping in MANTL (the shared GitHub
 // repository, one branch per prototype) live on a private GitHub Pages site,
 // which only opens in its own tab (opensInNewTabOnly below).
 export type PlatformId = "claude" | "replit" | "mantl";
@@ -36,7 +36,7 @@ export function detectPlatform(url: string, embedMode: EmbedMode): Platform | nu
   }
 
   if (host.endsWith(".pages.github.io")) {
-    return { id: "mantl", name: "Mantl", external: false, access: "restricted", subtitle: "Prototyping in Mantl" };
+    return { id: "mantl", name: "MANTL", external: false, access: "restricted", subtitle: "Prototyping in MANTL" };
   }
 
   if (/(^|\.)(replit\.app|replit\.dev|repl\.co|replit\.com)$/.test(host)) {
@@ -48,7 +48,7 @@ export function detectPlatform(url: string, embedMode: EmbedMode): Platform | nu
 }
 
 // Prototypes that are only ever opened in their own tab, never framed or
-// discussed here: everything from Prototyping in Mantl and any other private
+// discussed here: everything from Prototyping in MANTL and any other private
 // GitHub Pages site. GitHub's sign-in for private Pages only works in a full
 // tab, so the viewer can't show them; the library offers the site, its
 // handoff notes and its code instead.

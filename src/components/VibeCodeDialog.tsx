@@ -10,8 +10,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 const repositoryUrl = "https://github.com/myfintech/prototyping-in-mantl";
 // The zip itself, not the releases page, so the button starts the download.
 const templateDownloadUrl = `${repositoryUrl}/releases/download/latest/prototyping-in-mantl.zip`;
-// Where shared prototypes are listed once they are published.
-const galleryUrl = "https://animated-adventure-rkg3o2j.pages.github.io/";
 const folderName = "prototyping-in-mantl";
 
 const link = "text-marine-5 underline hover:text-marine-6";
@@ -60,8 +58,8 @@ export function VibeCodeDialog() {
           <Step number={3} title="Type “get this running” into Claude" visual={<ChatVisual prompt="get this running" reply="Starting the real Console with sample data…" />}>
             Claude installs what it needs and opens the Console in your browser; the first run takes a few minutes. Then tell Claude what you want to try, in plain words, and drop in a screenshot or sketch if you have one.
           </Step>
-          <Step number={4} title="Type “share this” to publish it" visual={<ChatVisual prompt="share this" reply="Publishing. It’ll be in the gallery in about 15 minutes." />}>
-            Sign in to GitHub when Claude asks, the first time only. About 15 minutes later your prototype is listed in the <a href={galleryUrl} target="_blank" rel="noreferrer" className={link}>MANTL gallery</a>. Running <code className={code}>pnpm share</code> does the same.
+          <Step number={4} title="Type “share this” to publish it" visual={<ChatVisual prompt="share this" reply="Shared. Look for it under MANTL vibe codes." />}>
+            Sign in to GitHub when Claude asks, the first time only. Once it’s shared, a link to your prototype shows up right here on Alkami Prototypes, in the <b>MANTL vibe codes</b> section, next to its handoff notes and code. Running <code className={code}>pnpm share</code> does the same.
           </Step>
         </ol>
 
@@ -121,13 +119,13 @@ function OpenFolderVisual() {
   );
 }
 
-// A Claude prompt box that types the phrase out, then Claude's reply appears.
+// A Claude prompt box holding the phrase to type, with Claude's reply above it.
 function ChatVisual({ prompt, reply }: { prompt: string; reply: string }) {
   return (
     <div className="flex h-24 flex-col justify-end gap-2 text-xs">
-      <div className="pixel-reply flex items-center gap-2 text-claude-ink"><ClaudeMark className="h-4 w-4 rounded-sm" /><span className="truncate">{reply}</span></div>
+      <div className="flex items-center gap-2 text-claude-ink"><ClaudeMark className="h-4 w-4 rounded-sm" /><span className="truncate">{reply}</span></div>
       <div className="flex items-center gap-2 rounded-lg border border-claude-border bg-abyss-0 py-1.5 pl-3 pr-1.5">
-        <span className="min-w-0 flex-1 text-sm text-abyss-9"><span className="pixel-type" style={{ "--chars": prompt.length } as React.CSSProperties}>{prompt}</span><span className="pixel-caret" /></span>
+        <span className="min-w-0 flex-1 truncate text-sm text-abyss-9">{prompt}</span>
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-claude text-abyss-0"><ArrowUp className="h-4 w-4" /></span>
       </div>
     </div>

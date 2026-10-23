@@ -10,6 +10,7 @@ import { PlatformPreview } from "@/components/Platform";
 import { HowItWorks } from "@/components/HowItWorks";
 import { NewTabLinks } from "@/components/NewTabLinks";
 import { PixelRunner } from "@/components/PixelRunner";
+import { TagButton } from "@/components/TagEditor";
 import { UserAvatar, UserIdentity } from "@/components/UserIdentity";
 import { VibeCodeDialog } from "@/components/VibeCodeDialog";
 import { Badge } from "@/components/ui/badge";
@@ -68,7 +69,7 @@ function Library() {
   const [query, setQuery] = useState("");
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [addOpen, setAddOpen] = useState(false);
-  const { prototypes, loading, error, refresh } = usePrototypes();
+  const { prototypes, loading, error, refresh, patch } = usePrototypes();
   const matchesQuery = (prototype: PrototypeSummary) => `${prototype.name} ${prototype.url} ${prototype.owner_name} ${prototype.tags.map((id) => tagInfo(id)?.label ?? "").join(" ")}`.toLowerCase().includes(query.toLowerCase());
   // Selecting several tags shows prototypes that have any of them.
   const visible = prototypes.filter((prototype) => matchesQuery(prototype) && (!tagFilter.length || prototype.tags.some((id) => tagFilter.includes(id))));
@@ -113,7 +114,7 @@ function Library() {
           </div>
         </div>
 
-        {loading ? <SkeletonGrid /> : error ? <LibraryError message={error} onRetry={() => void refresh()} /> : visible.length ? <LibraryGroups prototypes={visible} /> : filtering ? <EmptySearch /> : <EmptyLibrary onAdd={() => setAddOpen(true)} />}
+        {loading ? <SkeletonGrid /> : error ? <LibraryError message={error} onRetry={() => void refresh()} /> : visible.length ? <LibraryGroups prototypes={visible} onTagsChange={(id, tags) => patch(id, { tags })} /> : filtering ? <EmptySearch /> : <EmptyLibrary onAdd={() => setAddOpen(true)} />}
       </main>
       <AddPrototypeDialog open={addOpen} onOpenChange={setAddOpen} onCreated={() => void refresh()} />
       <PixelRunner />
@@ -151,21 +152,21 @@ function ContributorsCard({ contributors }: { contributors: Contributor[] }) {
 
 // The library card is the preview, who built it and the two ways in. The
 // description, tags and delete live in the viewer.
-// Prototypes from Prototyping in Mantl behave a little differently (they open
+// Prototypes from Prototyping in MANTL behave a little differently (they open
 // in a new tab with handoff and code links, and are archived at the source),
 // so they get their own group above everything added by hand.
-function LibraryGroups({ prototypes }: { prototypes: PrototypeSummary[] }) {
+function LibraryGroups({ prototypes, onTagsChange }: { prototypes: PrototypeSummary[]; onTagsChange: (id: string, tags: string[]) => void }) {
   const mantl = prototypes.filter((prototype) => prototype.source === "mantl");
   const others = prototypes.filter((prototype) => prototype.source !== "mantl");
   return (
     <div className="space-y-10">
-      {mantl.length ? <LibraryGroup title="Mantl vibe codes" count={mantl.length} mark={<img src="/mantl-mark.svg" alt="" className="h-8 w-8 [image-rendering:pixelated]" />} description="Built in the real Console with Claude Code and shared from Prototyping in Mantl. Each preview is a clickable recording on a private GitHub site, so it opens in a new tab, beside its handoff notes and code." prototypes={mantl} /> : null}
-      {others.length ? <LibraryGroup title={mantl.length ? "All other prototypes" : "Prototypes"} count={others.length} description="Hosted prototypes added by hand: Claude artifacts, Replit apps and anything else with a link." prototypes={others} /> : null}
+      {mantl.length ? <LibraryGroup title="MANTL vibe codes" count={mantl.length} mark={<img src="/mantl-mark.svg" alt="" className="h-8 w-8 [image-rendering:pixelated]" />} onTagsChange={onTagsChange} description="Built in the real Console with Claude Code and shared from Prototyping in MANTL. Each preview is a clickable recording on a private GitHub site, so it opens in a new tab, beside its handoff notes and code." prototypes={mantl} /> : null}
+      {others.length ? <LibraryGroup onTagsChange={onTagsChange} title={mantl.length ? "All other prototypes" : "Prototypes"} count={others.length} description="Hosted prototypes added by hand: Claude artifacts, Replit apps and anything else with a link." prototypes={others} /> : null}
     </div>
   );
 }
 
-function LibraryGroup({ title, count, description, mark, prototypes }: { title: string; count: number; description: string; mark?: React.ReactNode; prototypes: PrototypeSummary[] }) {
+function LibraryGroup({ title, count, description, mark, prototypes, onTagsChange }: { title: string; count: number; description: string; mark?: React.ReactNode; prototypes: PrototypeSummary[]; onTagsChange: (id: string, tags: string[]) => void }) {
   return (
     <section aria-label={title}>
       <div className="mb-4 flex items-start gap-3 border-b-2 border-carbon-2 pb-3">
@@ -175,18 +176,19 @@ function LibraryGroup({ title, count, description, mark, prototypes }: { title: 
           <p className="mt-0.5 text-sm text-abyss-5">{description}</p>
         </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{prototypes.map((prototype) => <PrototypeCard key={prototype.id} prototype={prototype} />)}</div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{prototypes.map((prototype) => <PrototypeCard key={prototype.id} prototype={prototype} onTagsChange={(tags) => onTagsChange(prototype.id, tags)} />)}</div>
     </section>
   );
 }
 
-function PrototypeCard({ prototype }: { prototype: PrototypeSummary }) {
+function PrototypeCard({ prototype, onTagsChange }: { prototype: PrototypeSummary; onTagsChange: (tags: string[]) => void }) {
   const platform = detectPlatform(prototype.url, prototype.embed_mode);
   const viewerUrl = `/p/${prototype.id}`;
   const comments = prototype.open_comment_count;
-  // Prototypes from Prototyping in Mantl and other private GitHub Pages sites
+  // Prototypes from Prototyping in MANTL and other private GitHub Pages sites
   // can't be framed or discussed here: their preview is the gallery thumbnail,
-  // and the card opens the site, its handoff notes and its code in new tabs.
+  // the card opens the site, its handoff notes and its code in new tabs, and
+  // tags are edited from the card (there is no viewer page to do it in).
   const newTabOnly = opensInNewTabOnly(prototype);
   const previewClass = "relative block h-44 overflow-hidden border-b-2 border-carbon-2 bg-carbon-1 focus-visible:outline-none";
   const preview = <>
@@ -199,7 +201,10 @@ function PrototypeCard({ prototype }: { prototype: PrototypeSummary }) {
         ? <a href={prototype.url} target="_blank" rel="noopener noreferrer" className={previewClass} aria-label={`Open ${prototype.name} in a new tab`}>{preview}</a>
         : <Link to={viewerUrl} className={previewClass} aria-label={`Open ${prototype.name}`}>{preview}</Link>}
       <div className="flex flex-1 flex-col gap-1.5 px-5 pb-4 pt-3">
-        <h3 className="truncate text-base leading-5 text-abyss-9">{prototype.name}</h3>
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <h3 className="truncate text-base leading-5 text-abyss-9">{prototype.name}</h3>
+          {newTabOnly ? <div className="shrink-0 [&_button]:min-h-7 [&_button]:px-2 [&_svg]:!h-4 [&_svg]:!w-4"><TagButton prototypeId={prototype.id} tags={prototype.tags} onChange={onTagsChange} /></div> : null}
+        </div>
         <div className="flex min-w-0 items-center gap-1.5 text-xs text-abyss-5">
           <UserAvatar id={prototype.owner_id} name={prototype.owner_name} className="h-5 w-5 text-[10px]" />
           <span className="truncate">{displayName(prototype.owner_name)}</span>

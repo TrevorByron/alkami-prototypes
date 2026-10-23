@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Tag } from "lucide-react";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SelectionPill } from "@/components/ui/selection-pill";
 import { isDemoMode } from "@/lib/demoMode";
 import { updateDemoPrototypeTags } from "@/lib/demoStore";
 import { supabase } from "@/lib/supabase";
-import { prototypeTags } from "@/lib/tags";
+import { prototypeTags, tagInfo } from "@/lib/tags";
 
 // Edit a prototype's tags in place. Each click saves immediately and the
 // parent is told the new list, so callers can update without a full reload.
@@ -30,5 +32,20 @@ export function TagPicker({ prototypeId, tags, onChange }: { prototypeId: string
       <div className="mb-2 flex items-center justify-between"><p className="text-sm font-medium text-abyss-9">Tags</p>{saving ? <Loader2 className="h-4 w-4 animate-spin text-abyss-5" aria-label="Saving" /> : <span className="text-xs text-abyss-5">Saves as you click</span>}</div>
       <div className="flex flex-wrap gap-2">{prototypeTags.map((tag) => <SelectionPill key={tag.id} selected={tags.includes(tag.id)} title={tag.hint} onClick={() => void toggle(tag.id)}><span aria-hidden>{tag.emoji}</span>{tag.label}</SelectionPill>)}</div>
     </div>
+  );
+}
+
+// A tag button for library cards whose prototypes have no viewer page (MANTL
+// and other private GitHub Pages prototypes): it shows how many tags are set
+// and opens the same picker in a popover.
+export function TagButton({ prototypeId, tags, onChange }: { prototypeId: string; tags: string[]; onChange: (tags: string[]) => void }) {
+  const labels = tags.map((id) => tagInfo(id)?.label).filter(Boolean).join(", ");
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" aria-label={labels ? `Edit tags: ${labels}` : "Add tags"} title={labels || "Add tags"}><Tag />{tags.length ? tags.length : null}</Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80"><TagPicker prototypeId={prototypeId} tags={tags} onChange={onChange} /></PopoverContent>
+    </Popover>
   );
 }

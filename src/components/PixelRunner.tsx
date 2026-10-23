@@ -1,24 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
+import { useAuth } from "@/auth/AuthProvider";
 import { ALKAMI_A_COLORS, ALKAMI_A_PIXELS } from "@/lib/alkamiMark";
+import { displayName } from "@/lib/names";
+import { fetchLeaderboard, placeOnBoard, recordRunnerScore, type ScoreEntry } from "@/lib/runnerScores";
 
-// An easter egg: a 20px pixel critter idles in the library's bottom-left
-// corner. Click it and the page fades behind a veil while the critter hops to
+// An easter egg: a 20px pixel critter now and then hops up into the library's
+// bottom-left corner, bounces there for a while, then ducks back out of view. Click it and the page fades behind a veil while the critter hops to
 // the middle of the screen and starts running: jump the crates, grab the
-// Alkami A coins. Space, up arrow, click or tap jumps; Esc leaves.
+// Alkami A coins. Space, up arrow, click or tap jumps; Esc leaves. Each
+// member's best run is saved to Supabase, and an arcade-style high-score
+// table (top 5) shows before each run and after it ends, with a compact copy
+// in the corner during the run where the player's row climbs as they score.
 
 // Sprites are character grids, one character per pixel; "." is empty.
-// B body, D feet, W eye white, K pupil, G cheek.
+// The critter is the MANTL mark come to life: the blue tile (B) with its
+// white M (W), the light sparkle (*) up top as an antenna, two eyes (K)
+// peeking over the M, and feet (D).
 const CRITTER_TOP = [
-  "...BBBBBB...",
-  "..BBBBBBBB..",
-  ".BBWKBBWKBB.",
-  ".BBWKBBWKBB.",
+  ".BBBBBBBBB*.",
+  "BBBBBBBBB***",
+  "BBWBBBBBBW*B",
+  "BBWWKBBKWWBB",
+  "BBWBWBBWBWBB",
+  "BBWBBWWBBWBB",
+  "BBWBBBBBBWBB",
   ".BBBBBBBBBB.",
-  ".BGBBBBBBGB.",
-  "..BBBBBBBB..",
-  "...BBBBBB...",
 ];
 const CRITTER_FRAMES = {
   stand: [...CRITTER_TOP, "...D....D...", "..DD....DD.."],
@@ -89,8 +97,8 @@ export function PixelRunner() {
   return (
     <>
       {playing ? null : (
-        <button ref={buttonRef} type="button" onClick={open} className="pixel-critter-idle fixed bottom-4 left-4 z-40 rounded-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marine-2" aria-label="A small pixel creature. Click it to play a game." title="Psst">
-          <CritterIcon />
+        <button ref={buttonRef} type="button" onClick={open} className="pixel-critter-peek fixed bottom-4 left-4 z-40 rounded-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marine-2" aria-label="A small pixel creature. Click it to play a game." title="Psst">
+          <span className="pixel-critter-idle block"><CritterIcon /></span>
         </button>
       )}
       {playing ? <RunnerGame visible={visible} startRect={startRect.current} onClose={close} /> : null}
@@ -99,7 +107,7 @@ export function PixelRunner() {
 }
 
 function CritterIcon() {
-  const colors: Record<string, string> = { B: "hsl(var(--color-marine-5))", D: "hsl(var(--color-marine-8))", W: "#ffffff", K: "hsl(var(--color-abyss-9))", G: ALKAMI_A_COLORS.o };
+  const colors: Record<string, string> = { B: "hsl(var(--color-marine-6))", D: "hsl(var(--color-marine-8))", W: "#ffffff", K: "hsl(var(--color-abyss-9))", "*": "hsl(var(--color-marine-2))" };
   const rects = CRITTER_FRAMES.stand.flatMap((row, y) => [...row].flatMap((cell, x) => (colors[cell] ? [{ x, y, fill: colors[cell] }] : [])));
   return (
     <svg viewBox={`0 0 ${CRITTER_W} ${CRITTER_H}`} width={CRITTER_W * IDLE_SCALE} height={CRITTER_H * IDLE_SCALE} shapeRendering="crispEdges" aria-hidden className="block">
@@ -111,6 +119,9 @@ function CritterIcon() {
 function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRect: DOMRect | null; onClose: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const jumpRef = useRef<() => void>(() => {});
+  const { user, profile } = useAuth();
+  const userId = user?.id;
+  const myName = displayName(profile?.name ?? user?.email ?? "You");
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -118,7 +129,7 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
     if (!canvas || !ctx) return;
 
     const palette = {
-      critter: { B: token("marine-5"), D: token("marine-8"), W: "#ffffff", K: token("abyss-9"), G: ALKAMI_A_COLORS.o } as Record<string, string>,
+      critter: { B: token("marine-6"), D: token("marine-8"), W: "#ffffff", K: token("abyss-9"), "*": token("marine-2") } as Record<string, string>,
       crate: { C: token("carbon-7"), c: token("carbon-2"), x: token("carbon-5") } as Record<string, string>,
       ground: token("carbon-4"),
       groundDash: token("carbon-3"),
@@ -150,7 +161,9 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
     const groundY = () => Math.round(height * 0.62);
     const critterX = () => Math.round(width / 2 - critterW / 2);
 
-    let state: "intro" | "playing" | "over" = "intro";
+    // intro: hopping in. ready: waiting on the high-score table for the first
+    // jump. playing, then over: the table again, with this run on it.
+    let state: "intro" | "ready" | "playing" | "over" = "intro";
     let started = performance.now();
     let y = 0; // critter's feet, as a distance above the ground
     let vy = 0;
@@ -158,6 +171,19 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
     let distance = 0;
     let score = 0;
     let best = readBest();
+    // The high-score table: Supabase's top 5, with this player's best on it.
+    // Until it loads (or without Supabase) it holds just this browser's best.
+    const me = userId ?? "you";
+    const mineOnBoard = (rows: ScoreEntry[]) => (best > 0 ? placeOnBoard(rows, { id: me, name: myName, score: best }) : rows);
+    let board: ScoreEntry[] = mineOnBoard([]);
+    let newHigh = false;
+    let active = true;
+    void fetchLeaderboard().then((rows) => {
+      if (!active || !rows) return;
+      const remoteBest = rows.find((row) => row.id === me)?.score ?? 0;
+      if (remoteBest > best) { best = remoteBest; saveBest(best); }
+      board = mineOnBoard(rows);
+    });
     let obstacles: Obstacle[] = [];
     let coins: Coin[] = [];
     let sparks: Spark[] = [];
@@ -169,12 +195,12 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
       state = "playing";
       y = 0; vy = 0; speed = START_SPEED; distance = 0; score = 0; playTime = 0;
       obstacles = []; coins = []; sparks = [];
-      nextObstacle = 600; nextCoin = 260;
+      nextObstacle = 600; nextCoin = 260; newHigh = false;
       announce();
     };
 
     jumpRef.current = () => {
-      if (state === "over") { reset(); return; }
+      if (state === "over" || state === "ready") { reset(); return; }
       if (state === "playing" && y === 0) vy = JUMP_VELOCITY;
     };
 
@@ -220,6 +246,11 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
         if (right > item.x + 4 && left < item.x + crateSize - 4 && bottom < crateTop) {
           state = "over";
           if (score > best) { best = score; saveBest(best); }
+          if (score > 0) {
+            void recordRunnerScore(score);
+            newHigh = score > (board[0]?.score ?? 0);
+            board = placeOnBoard(board, { id: me, name: myName, score });
+          }
           announce();
           return;
         }
@@ -232,11 +263,64 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
       });
     };
 
-    const text = (value: string, x: number, yPos: number, size: number, color: string) => {
+    const text = (value: string, x: number, yPos: number, size: number, color: string, align: CanvasTextAlign = "center") => {
       ctx.font = `${size}px Silkscreen, "Fira Mono", monospace`;
       ctx.fillStyle = color;
-      ctx.textAlign = "center";
+      ctx.textAlign = align;
       ctx.fillText(value, x, yPos);
+    };
+
+    // During the run: a compact table in the top-left corner, with this run
+    // placed live so the player can see who they are about to pass.
+    const drawMiniBoard = () => {
+      const rows = score > 0 ? placeOnBoard(board, { id: me, name: myName, score }) : board;
+      const rowH = 18;
+      const panelW = 220;
+      const panelH = 34 + Math.max(rows.length, 1) * rowH + 6;
+      const left = 20;
+      const topY = 20;
+      ctx.fillStyle = palette.ink;
+      ctx.fillRect(left - 3, topY - 3, panelW + 6, panelH + 6);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(left, topY, panelW, panelH);
+      text("High scores", left + panelW / 2, topY + 20, 12, palette.ink);
+      if (!rows.length) text("Be the first!", left + panelW / 2, topY + 44, 10, palette.muted);
+      rows.forEach((row, index) => {
+        const color = row.id === me ? ALKAMI_A_COLORS.k : palette.ink;
+        const name = displayName(row.name);
+        const rowY = topY + 42 + index * rowH;
+        text(String(index + 1), left + 12, rowY, 10, color, "left");
+        text(name.length > 14 ? `${name.slice(0, 13)}…` : name, left + 32, rowY, 10, color, "left");
+        text(String(row.id === me ? Math.max(row.score, score) : row.score), left + panelW - 12, rowY, 10, color, "right");
+      });
+    };
+
+    // The arcade high-score table, drawn as a white pixel panel whose bottom
+    // sits just above the critter's head.
+    const ranks = ["1st", "2nd", "3rd", "4th", "5th"];
+    const drawBoard = (ground: number) => {
+      const rowH = 24;
+      const titled = state === "over";
+      const lines = Math.max(board.length, 1);
+      const panelW = Math.min(380, width - 32);
+      const panelH = 48 + (titled && newHigh ? 24 : 0) + lines * rowH + 12;
+      const left = Math.round(width / 2 - panelW / 2);
+      const topY = ground - critterH - 24 - panelH;
+      ctx.fillStyle = palette.ink;
+      ctx.fillRect(left - 4, topY - 4, panelW + 8, panelH + 8);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(left, topY, panelW, panelH);
+      text(titled ? "Game over" : "High scores", width / 2, topY + 30, 18, palette.ink);
+      let rowY = topY + 60;
+      if (titled && newHigh) { text("New high score!", width / 2, rowY - 4, 12, ALKAMI_A_COLORS.k); rowY += 24; }
+      if (!board.length) text("No scores yet. Be the first!", width / 2, rowY, 12, palette.muted);
+      board.forEach((row, index) => {
+        const color = row.id === me ? ALKAMI_A_COLORS.k : palette.ink;
+        const name = displayName(row.name);
+        text(ranks[index] ?? "", left + 20, rowY + index * rowH, 14, color, "left");
+        text(name.length > 16 ? `${name.slice(0, 15)}…` : name, left + 76, rowY + index * rowH, 14, color, "left");
+        text(String(row.score), left + panelW - 20, rowY + index * rowH, 14, color, "right");
+      });
     };
 
     const draw = (now: number) => {
@@ -272,23 +356,27 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
         const x = fromX + (toX - fromX) * ease;
         const feet = fromY + (toY - fromY) * ease - Math.sin(t * Math.PI) * 120;
         drawSprite(ctx, CRITTER_FRAMES.jump, palette.critter, x, feet - CRITTER_H * scale, Math.max(1, Math.round(scale)));
-        if (t >= 1) { state = "playing"; }
+        if (t >= 1) { state = "ready"; }
       } else {
         const frame = state === "over" ? CRITTER_FRAMES.stand : y > 0 ? CRITTER_FRAMES.jump : Math.floor(distance / 40) % 2 ? CRITTER_FRAMES.stride : CRITTER_FRAMES.stand;
         drawSprite(ctx, frame, palette.critter, critterX(), ground - y - critterH, GAME_SCALE);
       }
 
-      // Score, with the A coin as its icon.
-      const hudY = ground - 260;
-      drawSprite(ctx, ALKAMI_A_PIXELS, ALKAMI_A_COLORS, width / 2 - 64, hudY - 26, COIN_SCALE);
-      text(`× ${score}`, width / 2 + 4, hudY, 24, palette.ink);
-      text(`Best ${best}`, width / 2, hudY + 26, 12, palette.muted);
+      // The arcade top bar: this run's score (with the A coin) and the high
+      // score to beat.
+      const barY = ground - 300;
+      const highScore = Math.max(board[0]?.score ?? 0, score);
+      text("Score", width / 2 - 140, barY - 30, 12, palette.muted);
+      drawSprite(ctx, ALKAMI_A_PIXELS, ALKAMI_A_COLORS, width / 2 - 140 - 44, barY - 22, COIN_SCALE);
+      text(String(score), width / 2 - 140 + 16, barY + 2, 24, palette.ink);
+      text("High score", width / 2 + 140, barY - 30, 12, palette.muted);
+      text(String(highScore), width / 2 + 140, barY + 2, 24, palette.ink);
 
+      if (state === "ready" || state === "over") drawBoard(ground);
+      if (state === "playing") drawMiniBoard();
+      if (state === "ready") text("Space or tap to start", width / 2, ground + 56, 14, palette.muted);
       if (state === "playing" && playTime < 2.5) text("Space or tap to jump", width / 2, ground + 56, 14, palette.muted);
-      if (state === "over") {
-        text("Game over", width / 2, ground - 150, 32, palette.ink);
-        text("Space or tap to try again · Esc to leave", width / 2, ground + 56, 14, palette.muted);
-      }
+      if (state === "over") text("Space or tap to try again · Esc to leave", width / 2, ground + 56, 14, palette.muted);
     };
 
     let frameId = 0;
@@ -304,10 +392,11 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
     frameId = requestAnimationFrame(loop);
 
     return () => {
+      active = false;
       cancelAnimationFrame(frameId);
       window.removeEventListener("resize", resize);
     };
-  }, [startRect]);
+  }, [startRect, userId, myName]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -322,7 +411,7 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
   }, [onClose]);
 
   return (
-    <div className={`fixed inset-0 z-[60] bg-abyss-0/85 transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`} role="dialog" aria-modal="true" aria-label="Pixel runner game">
+    <div className={`fixed inset-0 z-[60] bg-abyss-0/90 transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`} role="dialog" aria-modal="true" aria-label="Pixel runner game">
       <canvas ref={canvasRef} className="block h-full w-full cursor-pointer touch-none" role="img" aria-label="Pixel runner. Score 0." onPointerDown={(event) => { event.preventDefault(); jumpRef.current(); }} />
       <button type="button" onClick={onClose} className="pixel-notch absolute right-4 top-4 flex h-10 w-10 items-center justify-center bg-carbon-1 text-abyss-9 hover:bg-carbon-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marine-2" aria-label="Leave the game"><X className="h-5 w-5" /></button>
     </div>
