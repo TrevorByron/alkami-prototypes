@@ -6,8 +6,8 @@ import { ALKAMI_A_COLORS, ALKAMI_A_PIXELS } from "@/lib/alkamiMark";
 import { displayName } from "@/lib/names";
 import { fetchLeaderboard, placeOnBoard, recordRunnerScore, type ScoreEntry } from "@/lib/runnerScores";
 
-// An easter egg: a 20px pixel critter idles in the library's bottom-left
-// corner. Click it and the page fades behind a veil while the critter hops to
+// An easter egg: a 20px pixel critter now and then hops up into the library's
+// bottom-left corner, bounces there for a while, then ducks back out of view. Click it and the page fades behind a veil while the critter hops to
 // the middle of the screen and starts running: jump the crates, grab the
 // Alkami A coins. Space, up arrow, click or tap jumps; Esc leaves. Each
 // member's best run is saved to Supabase, and an arcade-style high-score
@@ -97,8 +97,8 @@ export function PixelRunner() {
   return (
     <>
       {playing ? null : (
-        <button ref={buttonRef} type="button" onClick={open} className="pixel-critter-idle fixed bottom-4 left-4 z-40 rounded-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marine-2" aria-label="A small pixel creature. Click it to play a game." title="Psst">
-          <CritterIcon />
+        <button ref={buttonRef} type="button" onClick={open} className="pixel-critter-peek fixed bottom-4 left-4 z-40 rounded-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marine-2" aria-label="A small pixel creature. Click it to play a game." title="Psst">
+          <span className="pixel-critter-idle block"><CritterIcon /></span>
         </button>
       )}
       {playing ? <RunnerGame visible={visible} startRect={startRect.current} onClose={close} /> : null}

@@ -210,9 +210,15 @@
     --shadow-pixel: 4px 4px 0 0 hsl(var(--color-abyss-9) / 0.45);
   }
 
-  /* The corner critter (PixelRunner) bobs in two hard steps while it waits. */
+  /* The corner critter (PixelRunner) peeks in on a loop: out of view for
+     ~4s, hops up into the corner, stays ~11s, drops away, and is gone for
+     ~25s before coming back. Hidden means not clickable or focusable. While
+     it is in view it keeps bouncing. */
+  .pixel-critter-peek {
+    animation: pixel-peek 40s steps(4, end) infinite;
+  }
   .pixel-critter-idle {
-    animation: pixel-bob 1.4s steps(1, end) infinite;
+    animation: pixel-bob 0.7s steps(1, end) infinite;
   }
 
   .pixel-notch {
@@ -244,11 +250,19 @@
 
   @keyframes pixel-bob {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-2px); }
+    50% { transform: translateY(-3px); }
+  }
+
+  @keyframes pixel-peek {
+    0%, 10% { transform: translateY(64px); visibility: hidden; }
+    10.1% { transform: translateY(64px); visibility: visible; }
+    12%, 39% { transform: translateY(0); visibility: visible; }
+    41% { transform: translateY(64px); visibility: visible; }
+    41.1%, 100% { transform: translateY(64px); visibility: hidden; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pixel-cursor::after, .pixel-critter-idle { animation: none; }
+    .pixel-cursor::after, .pixel-critter-peek, .pixel-critter-idle { animation: none; }
     .pixel-lift, .pixel-lift:hover, .pixel-lift:focus-within { transform: none; transition: none; }
   }
 }
