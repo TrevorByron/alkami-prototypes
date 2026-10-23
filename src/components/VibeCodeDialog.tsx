@@ -1,37 +1,31 @@
-import { Boxes, Check, Download, ExternalLink, GitBranch, Sparkles, Terminal } from "lucide-react";
+import { CloudUpload, Download, ExternalLink, MessageSquare, Sparkles, WandSparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-const repositoryUrl = "https://github.com/myfintech/mantl-for-prototyping";
-const repositoryDownloadUrl = `${repositoryUrl}/archive/refs/heads/main.zip`;
+const repositoryUrl = "https://github.com/myfintech/prototyping-in-mantl";
+// The zip itself, not the releases page, so the button starts the download.
+const templateDownloadUrl = `${repositoryUrl}/releases/download/latest/prototyping-in-mantl.zip`;
+// Where shared prototypes are listed once they are published.
+const galleryUrl = "https://animated-adventure-rkg3o2j.pages.github.io/";
 
-const workflow = [
+const steps = [
   {
-    number: "01",
     icon: Download,
-    title: "Download the MANTL kit",
-    description: "Grab a snapshot of the MANTL front end, fake backend, design-system guidance, and Claude Code instructions.",
+    title: "Get the template",
+    body: <><a href={templateDownloadUrl} className="text-marine-5 underline hover:text-marine-6">Download Prototyping in MANTL</a>, unzip it, and open the folder in Claude Code.</>,
   },
   {
-    number: "02",
-    icon: Terminal,
-    title: "Ask Claude to get it running",
-    description: "Unzip the folder, open it in Claude Code, and say “get this running.” The included CLAUDE.md starts the exploration workflow.",
+    icon: WandSparkles,
+    title: "Build your idea",
+    body: <>Say <b>“get this running”</b>, then describe what you want to try. It takes shape in the real Console, with real data.</>,
   },
   {
-    number: "03",
-    icon: Sparkles,
-    title: "Vibe code the idea",
-    description: "Describe what you want to try, attach a screenshot or sketch, and let Claude shape a believable MANTL experience with synthetic data.",
-  },
-  {
-    number: "04",
-    icon: GitBranch,
-    title: "Get ready for handoff",
-    description: "When the direction feels right, say “get ready for dev.” Claude creates a HANDOFF.md and route screenshots for the next conversation.",
+    icon: CloudUpload,
+    title: "Share it",
+    body: <>Say <b>“share this”</b> (or run <code className="rounded bg-carbon-1 px-1 text-xs text-abyss-7">pnpm share</code>). Sign in to GitHub the first time. About 15 minutes later it is listed in the <a href={galleryUrl} target="_blank" rel="noreferrer" className="text-marine-5 underline hover:text-marine-6">MANTL gallery</a>.</>,
   },
 ];
 
@@ -48,16 +42,14 @@ export function VibeCodeDialog() {
         <div className="border-b border-carbon-3 bg-carbon-0 px-6 pb-6 pt-6 pr-14 sm:px-8">
           <Badge variant="default" className="mb-3">MANTL design playground</Badge>
           <DialogHeader>
-            <DialogTitle className="max-w-2xl">Explore ideas in the real MANTL look and feel.</DialogTitle>
-            <DialogDescription className="mt-1 max-w-2xl">
-              Download a ready-to-run MANTL snapshot, bring it into Claude Code, and shape the idea before anyone has to build the production feature.
-            </DialogDescription>
+            <DialogTitle className="max-w-2xl">How to use this</DialogTitle>
+            <DialogDescription className="mt-1 max-w-2xl">Three steps from an idea to a clickable prototype everyone can open. No GitHub knowledge needed.</DialogDescription>
           </DialogHeader>
           <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
             <Button asChild size="lg">
-              <a href={repositoryDownloadUrl} download="mantl-for-prototyping-main.zip" aria-label="Download the MANTL for prototyping repository">
+              <a href={templateDownloadUrl}>
                 <Download />
-                Download the repository
+                Download the template
               </a>
             </Button>
             <Button asChild variant="secondary" size="lg">
@@ -69,57 +61,22 @@ export function VibeCodeDialog() {
           </div>
         </div>
 
-        <div className="space-y-6 px-6 py-6 sm:px-8">
-          <section aria-labelledby="vibe-code-workflow">
-            <div className="mb-3">
-              <h2 id="vibe-code-workflow" className="text-base font-bold text-abyss-9">From a rough idea to a handoff-ready direction</h2>
-              <p className="mt-1 text-sm text-abyss-5">A simple loop for exploring a MANTL-shaped idea with Claude Code.</p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {workflow.map(({ number, icon: Icon, title, description }) => (
-                <Card key={number} className="p-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded bg-marine-0 text-marine-5"><Icon className="h-4 w-4" /></div>
-                    <span className="text-xs font-medium text-abyss-5">Step {number}</span>
-                  </div>
-                  <h3 className="text-base font-bold text-abyss-9">{title}</h3>
-                  <p className="mt-1 text-sm leading-5 text-abyss-5">{description}</p>
-                </Card>
-              ))}
-            </div>
-          </section>
-
-          <section aria-labelledby="mantl-surfaces">
-            <div className="mb-3">
-              <h2 id="mantl-surfaces" className="text-base font-bold text-abyss-9">Prototype with MANTL components and tokens</h2>
-              <p className="mt-1 max-w-2xl text-sm text-abyss-5">The repository includes design-system guidance and checks so Claude can reach for the closest real component instead of inventing a one-off look.</p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Card className="bg-carbon-0 p-4">
-                <div className="mb-2 flex items-center gap-2"><Boxes className="h-5 w-5 text-marine-5" /><h3 className="font-bold text-abyss-9">Console</h3></div>
-                <p className="text-sm leading-5 text-abyss-5">The banker and credit-union employee experience, using the <code className="rounded bg-carbon-1 px-1 text-xs text-abyss-7">@/UI</code> components and Console tokens.</p>
+        <ol className="grid gap-4 px-6 py-6 sm:grid-cols-3 sm:px-8">
+          {steps.map(({ icon: Icon, title, body }, index) => (
+            <li key={title} className="flex flex-col gap-2">
+              <span className="text-xs font-medium text-marine-5">Step {index + 1}</span>
+              <Card className="flex flex-1 flex-col gap-3 p-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded bg-marine-0 text-marine-5"><Icon className="h-5 w-5" /></div>
+                <h3 className="text-base text-abyss-9">{title}</h3>
+                <p className="text-sm leading-5 text-abyss-5 [&_b]:font-bold [&_b]:text-abyss-9">{body}</p>
               </Card>
-              <Card className="bg-carbon-0 p-4">
-                <div className="mb-2 flex items-center gap-2"><Boxes className="h-5 w-5 text-tiaga-8" /><h3 className="font-bold text-abyss-9">Self-serve</h3></div>
-                <p className="text-sm leading-5 text-abyss-5">The applicant experience, using <code className="rounded bg-carbon-1 px-1 text-xs text-abyss-7">@mantl/self-serve-components</code> across responsive, branded flows.</p>
-              </Card>
-            </div>
-          </section>
+            </li>
+          ))}
+        </ol>
 
-          <section className="rounded-lg border border-carbon-3 bg-carbon-0 p-4" aria-labelledby="getting-started">
-            <div className="flex items-start gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-tiaga-0 text-tiaga-8"><Check className="h-4 w-4" /></div>
-              <div className="min-w-0">
-                <h2 id="getting-started" className="text-base font-bold text-abyss-9">A quick start for your first session</h2>
-                <p className="mt-1 text-sm text-abyss-5">You need Node 24+, pnpm through Corepack, and macOS or Linux. No Docker, credentials, or real customer data are required.</p>
-                <div className="mt-3 grid gap-2 text-xs text-abyss-7 sm:grid-cols-3">
-                  <code className="rounded bg-abyss-0 px-3 py-2">pnpm prototype</code>
-                  <code className="rounded bg-abyss-0 px-3 py-2">pnpm handoff -- --route /console</code>
-                  <code className="rounded bg-abyss-0 px-3 py-2">pnpm stop</code>
-                </div>
-              </div>
-            </div>
-          </section>
+        <div className="flex items-start gap-2 border-t border-carbon-3 px-6 py-4 text-xs text-abyss-5 sm:px-8 [&_b]:font-bold [&_b]:text-abyss-9">
+          <MessageSquare className="h-4 w-4 shrink-0" />
+          <span>Sharing again updates the same card. Say <b>“archive this”</b> to take a preview down; the code stays on GitHub.</span>
         </div>
       </DialogContent>
     </Dialog>
