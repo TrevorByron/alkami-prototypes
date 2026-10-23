@@ -166,20 +166,20 @@ function PrototypeCard({ prototype }: { prototype: PrototypeSummary }) {
       <Link to={viewerUrl} className="relative block h-44 overflow-hidden border-b-2 border-carbon-2 bg-carbon-1 focus-visible:outline-none" aria-label={`Open ${prototype.name}`}>
         {prototype.thumbnail_url ? <img src={prototype.thumbnail_url} alt="" loading="lazy" className="h-full w-full object-cover object-left-top" /> : platform?.external ? <PlatformPreview platform={platform} /> : prototype.embed_mode === "live" ? <div className="pointer-events-none absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.3] bg-abyss-0"><iframe title={`${prototype.name} preview`} src={prototype.url} loading="lazy" tabIndex={-1} className="h-full w-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads" /></div> : <div className="flex h-full items-center justify-center text-xs text-abyss-5">Opens in a new tab</div>}
       </Link>
-      <div className="flex flex-1 flex-col gap-2 px-6 pb-4 pt-4">
+      <div className="flex flex-1 flex-col gap-1.5 px-5 pb-4 pt-3">
         <h3 className="truncate text-base leading-5 text-abyss-9">{prototype.name}</h3>
-        <div className="flex min-w-0 items-center gap-2 text-xs text-abyss-5">
-          <UserAvatar id={prototype.owner_id} name={prototype.owner_name} className="h-6 w-6 text-xs" />
+        <div className="flex min-w-0 items-center gap-1.5 text-xs text-abyss-5">
+          <UserAvatar id={prototype.owner_id} name={prototype.owner_name} className="h-5 w-5 text-[10px]" />
           <span className="truncate">{displayName(prototype.owner_name)}</span>
           <span aria-hidden>·</span>
           <span className="shrink-0">{formatRelativeTime(prototype.updated_at)}</span>
           {comments ? <><span aria-hidden>·</span><span className="shrink-0">{comments} comment{comments === 1 ? "" : "s"}</span></> : null}
         </div>
-        <div className="mt-auto flex items-center gap-2 pt-3">
+        <div className="mt-auto flex flex-wrap items-center gap-2 pt-2 [&_svg]:!h-4 [&_svg]:!w-4">
           <Button asChild><Link to={viewerUrl}>Open preview</Link></Button>
-          {mantl?.handoff_url ? <Button asChild variant="ghost"><a href={mantl.handoff_url} target="_blank" rel="noopener noreferrer"><FileText />Handoff</a></Button> : null}
-          {mantl?.code_url ? <Button asChild variant="ghost"><a href={mantl.code_url} target="_blank" rel="noopener noreferrer"><Code2 />Code</a></Button> : null}
-          {mantl ? null : <Button asChild variant="ghost"><a href={prototype.url} target="_blank" rel="noopener noreferrer"><ExternalLink />New tab</a></Button>}
+          {mantl?.handoff_url ? <Button asChild variant="outline"><a href={mantl.handoff_url} target="_blank" rel="noopener noreferrer"><FileText />Handoff</a></Button> : null}
+          {mantl?.code_url ? <Button asChild variant="outline"><a href={mantl.code_url} target="_blank" rel="noopener noreferrer"><Code2 />Code</a></Button> : null}
+          {mantl ? null : <Button asChild variant="outline"><a href={prototype.url} target="_blank" rel="noopener noreferrer"><ExternalLink />New tab</a></Button>}
         </div>
       </div>
     </Card>
