@@ -97,17 +97,22 @@ export function usePrototypes() {
   }, []);
 
   const remove = useCallback(async (id: string): Promise<string | null> => {
-    if (isDemoMode) {
-      deleteDemoPrototype(id);
-      await load();
-      return null;
-    }
-    if (!supabase || !user) return "You must be signed in to delete a prototype.";
-    const { error: deleteError } = await supabase.from("prototypes").delete().eq("id", id);
-    if (deleteError) return deleteError.message;
-    await load();
-    return null;
+    const error = await deletePrototype(id, Boolean(user));
+    if (!error) await load();
+    return error;
   }, [load, user]);
 
   return { prototypes, loading, error, refresh: load, remove, patch };
+}
+
+// Deletes a prototype with its comments and replies. Returns an error message,
+// or null once it is gone.
+export async function deletePrototype(id: string, signedIn: boolean): Promise<string | null> {
+  if (isDemoMode) {
+    deleteDemoPrototype(id);
+    return null;
+  }
+  if (!supabase || !signedIn) return "You must be signed in to delete a prototype.";
+  const { error } = await supabase.from("prototypes").delete().eq("id", id);
+  return error ? error.message : null;
 }

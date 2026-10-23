@@ -1,4 +1,4 @@
-import { ExternalLink, Globe, LockKeyhole, MessageSquare } from "lucide-react";
+import { ExternalLink, MessageSquare } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -73,20 +73,16 @@ export function PlatformBadge({ platform, className }: { platform: Platform; cla
 }
 
 // Card thumbnail for prototypes that can't be framed: a stylised app window in
-// the tool's colours that opens the real thing in a new tab.
-export function PlatformPreview({ platform, url }: { platform: Platform; url: string }) {
+// the tool's colours. The card links it to the viewer.
+export function PlatformPreview({ platform }: { platform: Platform }) {
   const brand = brands[platform.id];
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" className={cn("group/brand relative block h-36 overflow-hidden border-b border-carbon-3 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-marine-2", brand.surface)} aria-label={`Open the ${brand.thing} in a new tab`}>
-      <div className={cn("absolute inset-x-6 top-5 rounded-lg border bg-abyss-0 shadow-tropo transition-transform duration-200 group-hover/brand:-translate-y-0.5", brand.border)} aria-hidden>
+    <div className={cn("relative h-full overflow-hidden", brand.surface)} aria-hidden>
+      <div className={cn("absolute inset-x-6 top-5 rounded-lg border bg-abyss-0 shadow-tropo transition-transform duration-200 group-hover:-translate-y-0.5", brand.border)}>
         <div className={cn("flex items-center gap-2 border-b px-3 py-2", brand.border)}><PlatformMark platform={platform} className="h-4 w-4 !rounded !border-0 !p-0" /><span className={cn("h-1.5 w-20 rounded-full", brand.soft)} /></div>
         <div className="space-y-2 px-3 py-3"><span className={cn("block h-2 w-2/3 rounded-full", brand.accent)} /><span className={cn("block h-2 w-1/2 rounded-full", brand.soft)} /><span className={cn("block h-2 w-3/4 rounded-full", brand.soft)} /></div>
       </div>
-      <div className={cn("absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t to-transparent px-6 pb-3 pt-6", brand.fade)}>
-        <span className={cn("flex items-center gap-1 text-xs", brand.ink)}>{platform.access === "public" ? <Globe className="h-4 w-4" /> : <LockKeyhole className="h-4 w-4" />}{platform.access === "public" ? "Anyone with the link" : `Needs ${platform.name} access`}</span>
-        <span className={cn("inline-flex min-h-8 items-center gap-1 rounded-lg px-3 text-xs font-medium text-abyss-0 transition-colors", brand.groupButton)}>Opens in a new tab<ExternalLink className="h-4 w-4" /></span>
-      </div>
-    </a>
+    </div>
   );
 }
 
