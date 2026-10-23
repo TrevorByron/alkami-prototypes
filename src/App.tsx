@@ -16,7 +16,6 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { SelectionPill } from "@/components/ui/selection-pill";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
 import { type Contributor, useContributors } from "@/hooks/useContributors";
@@ -53,8 +52,6 @@ function TopBar() {
           <AppMark />
           <span className="pixel-cursor whitespace-nowrap font-pixel text-base text-marine-8">Alkami Prototypes</span>
         </Link>
-        <Separator className="h-6 w-px" />
-        <span className="text-sm text-abyss-5">Team prototype library</span>
       </div>
       <div className="flex items-center gap-2">
         <HowItWorks />
@@ -86,7 +83,6 @@ function Library() {
           <div>
             {isDemoMode ? <Badge variant="warning" className="mb-2">Local demo mode</Badge> : null}
             <h1 className="text-2xl leading-8 text-marine-8">Prototypes</h1>
-            <p className="mt-1 max-w-xl text-sm text-abyss-5">One shared home for prototypes built across Alkami. Explore what teammates are making, leave feedback, and keep ideas moving together.</p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <VibeCodeDialog />
