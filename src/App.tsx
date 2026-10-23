@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Route, Routes } from "react-router-dom";
-import { Code2, ExternalLink, FileText, Hammer, LayoutGrid, Plus, RotateCcw, Search, Users } from "lucide-react";
+import { ExternalLink, Hammer, LayoutGrid, Plus, RotateCcw, Search, Users } from "lucide-react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -8,6 +8,7 @@ import { AddPrototypeDialog } from "@/components/AddPrototypeDialog";
 import { AppMark } from "@/components/AppMark";
 import { PlatformPreview } from "@/components/Platform";
 import { HowItWorks } from "@/components/HowItWorks";
+import { NewTabLinks } from "@/components/NewTabLinks";
 import { UserAvatar, UserIdentity } from "@/components/UserIdentity";
 import { VibeCodeDialog } from "@/components/VibeCodeDialog";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +22,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { type Contributor, useContributors } from "@/hooks/useContributors";
 import { usePrototypes } from "@/hooks/usePrototypes";
 import { isDemoMode } from "@/lib/demoMode";
-import { detectPlatform } from "@/lib/platforms";
+import { detectPlatform, opensInNewTabOnly } from "@/lib/platforms";
 import { displayName } from "@/lib/names";
 import { prototypeTags, tagInfo } from "@/lib/tags";
 import type { PrototypeSummary } from "@/lib/types";
@@ -148,15 +149,15 @@ function ContributorsCard({ contributors }: { contributors: Contributor[] }) {
 
 // The library card is the preview, who built it and the two ways in. The
 // description, tags and delete live in the viewer.
-// Prototypes from Prototyping in Mantl behave a little differently (private
-// preview with a sign-in step, handoff and code links, archived at the source),
+// Prototypes from Prototyping in Mantl behave a little differently (they open
+// in a new tab with handoff and code links, and are archived at the source),
 // so they get their own group above everything added by hand.
 function LibraryGroups({ prototypes }: { prototypes: PrototypeSummary[] }) {
   const mantl = prototypes.filter((prototype) => prototype.source === "mantl");
   const others = prototypes.filter((prototype) => prototype.source !== "mantl");
   return (
     <div className="space-y-10">
-      {mantl.length ? <LibraryGroup title="Mantl vibe codes" count={mantl.length} mark={<img src="/mantl-mark.svg" alt="" className="h-8 w-8 [image-rendering:pixelated]" />} description="Built in the real Console with Claude Code and shared from Prototyping in Mantl. Each preview is a clickable recording on a private site: sign in to GitHub once to view it here." prototypes={mantl} /> : null}
+      {mantl.length ? <LibraryGroup title="Mantl vibe codes" count={mantl.length} mark={<img src="/mantl-mark.svg" alt="" className="h-8 w-8 [image-rendering:pixelated]" />} description="Built in the real Console with Claude Code and shared from Prototyping in Mantl. Each preview is a clickable recording on a private GitHub site, so it opens in a new tab, beside its handoff notes and code." prototypes={mantl} /> : null}
       {others.length ? <LibraryGroup title={mantl.length ? "All other prototypes" : "Prototypes"} count={others.length} description="Hosted prototypes added by hand: Claude artifacts, Replit apps and anything else with a link." prototypes={others} /> : null}
     </div>
   );
@@ -181,16 +182,20 @@ function PrototypeCard({ prototype }: { prototype: PrototypeSummary }) {
   const platform = detectPlatform(prototype.url, prototype.embed_mode);
   const viewerUrl = `/p/${prototype.id}`;
   const comments = prototype.open_comment_count;
-  // Prototypes from Prototyping in Mantl: the preview is a copy of the gallery
-  // thumbnail (the live frame would only show GitHub's sign-in page), and the
-  // card carries the same ways in as the gallery: handoff notes and code.
-  const mantl = prototype.source === "mantl" ? prototype.source_meta : null;
+  // Prototypes from Prototyping in Mantl and other private GitHub Pages sites
+  // can't be framed or discussed here: their preview is the gallery thumbnail,
+  // and the card opens the site, its handoff notes and its code in new tabs.
+  const newTabOnly = opensInNewTabOnly(prototype);
+  const previewClass = "relative block h-44 overflow-hidden border-b-2 border-carbon-2 bg-carbon-1 focus-visible:outline-none";
+  const preview = <>
+    {prototype.thumbnail_url ? <img src={prototype.thumbnail_url} alt="" loading="lazy" className="h-full w-full object-cover object-left-top" /> : platform?.external ? <PlatformPreview platform={platform} /> : prototype.embed_mode === "live" && !newTabOnly ? <div className="pointer-events-none absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.3] bg-abyss-0"><iframe title={`${prototype.name} preview`} src={prototype.url} loading="lazy" tabIndex={-1} className="h-full w-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads" /></div> : <div className="flex h-full items-center justify-center text-xs text-abyss-5">Opens in a new tab</div>}
+  </>;
 
   return (
     <Card className="pixel-lift group flex flex-col overflow-hidden hover:border-marine-2 focus-within:border-marine-2">
-      <Link to={viewerUrl} className="relative block h-44 overflow-hidden border-b-2 border-carbon-2 bg-carbon-1 focus-visible:outline-none" aria-label={`Open ${prototype.name}`}>
-        {prototype.thumbnail_url ? <img src={prototype.thumbnail_url} alt="" loading="lazy" className="h-full w-full object-cover object-left-top" /> : platform?.external ? <PlatformPreview platform={platform} /> : prototype.embed_mode === "live" ? <div className="pointer-events-none absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.3] bg-abyss-0"><iframe title={`${prototype.name} preview`} src={prototype.url} loading="lazy" tabIndex={-1} className="h-full w-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads" /></div> : <div className="flex h-full items-center justify-center text-xs text-abyss-5">Opens in a new tab</div>}
-      </Link>
+      {newTabOnly
+        ? <a href={prototype.url} target="_blank" rel="noopener noreferrer" className={previewClass} aria-label={`Open ${prototype.name} in a new tab`}>{preview}</a>
+        : <Link to={viewerUrl} className={previewClass} aria-label={`Open ${prototype.name}`}>{preview}</Link>}
       <div className="flex flex-1 flex-col gap-1.5 px-5 pb-4 pt-3">
         <h3 className="truncate text-base leading-5 text-abyss-9">{prototype.name}</h3>
         <div className="flex min-w-0 items-center gap-1.5 text-xs text-abyss-5">
@@ -198,13 +203,13 @@ function PrototypeCard({ prototype }: { prototype: PrototypeSummary }) {
           <span className="truncate">{displayName(prototype.owner_name)}</span>
           <span aria-hidden>·</span>
           <span className="shrink-0">{formatRelativeTime(prototype.updated_at)}</span>
-          {comments ? <><span aria-hidden>·</span><span className="shrink-0">{comments} comment{comments === 1 ? "" : "s"}</span></> : null}
+          {comments && !newTabOnly ? <><span aria-hidden>·</span><span className="shrink-0">{comments} comment{comments === 1 ? "" : "s"}</span></> : null}
         </div>
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-2 [&_svg]:!h-4 [&_svg]:!w-4">
-          <Button asChild><Link to={viewerUrl}>Open preview</Link></Button>
-          {mantl?.handoff_url ? <Button asChild variant="outline"><a href={mantl.handoff_url} target="_blank" rel="noopener noreferrer"><FileText />Handoff</a></Button> : null}
-          {mantl?.code_url ? <Button asChild variant="outline"><a href={mantl.code_url} target="_blank" rel="noopener noreferrer"><Code2 />Code</a></Button> : null}
-          {mantl ? null : <Button asChild variant="outline"><a href={prototype.url} target="_blank" rel="noopener noreferrer"><ExternalLink />New tab</a></Button>}
+          {newTabOnly ? <NewTabLinks prototype={prototype} /> : <>
+            <Button asChild><Link to={viewerUrl}>Open preview</Link></Button>
+            <Button asChild variant="outline"><a href={prototype.url} target="_blank" rel="noopener noreferrer"><ExternalLink />New tab</a></Button>
+          </>}
         </div>
       </div>
     </Card>

@@ -11,9 +11,8 @@ import type { EmbedMode } from "@/lib/types";
 // DENY), which check-embed records as new_tab.
 //
 // Mantl: previews published from Prototyping in Mantl (the shared GitHub
-// repository, one branch per prototype) live on a private GitHub Pages site.
-// They frame fine once the viewer is signed in to GitHub; the viewer shows its
-// sign-in card first (ViewerPage.tsx, needsSignIn).
+// repository, one branch per prototype) live on a private GitHub Pages site,
+// which only opens in its own tab (opensInNewTabOnly below).
 export type PlatformId = "claude" | "replit" | "mantl";
 
 export type Platform = {
@@ -46,4 +45,14 @@ export function detectPlatform(url: string, embedMode: EmbedMode): Platform | nu
   }
 
   return null;
+}
+
+// Prototypes that are only ever opened in their own tab, never framed or
+// discussed here: everything from Prototyping in Mantl and any other private
+// GitHub Pages site. GitHub's sign-in for private Pages only works in a full
+// tab, so the viewer can't show them; the library offers the site, its
+// handoff notes and its code instead.
+export function opensInNewTabOnly(prototype: { url: string; source?: string | null }) {
+  if (prototype.source === "mantl") return true;
+  try { return new URL(prototype.url).hostname.endsWith(".pages.github.io"); } catch { return false; }
 }
