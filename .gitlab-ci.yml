@@ -21,6 +21,8 @@ deploy-functions:
     - npx supabase functions deploy check-embed --project-ref "$SUPABASE_PROJECT_REF"
     - npx supabase functions deploy slack-directory --project-ref "$SUPABASE_PROJECT_REF"
     - npx supabase functions deploy notify-slack --project-ref "$SUPABASE_PROJECT_REF"
+    # Called by GitHub Actions with a shared secret, not by a signed-in member.
+    - npx supabase functions deploy register-prototype --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       when: manual

@@ -61,6 +61,23 @@ const brands: Record<PlatformId, {
     panelBody: "Private Replit deployments only open for people signed in to Replit with access, so this one opens in a new tab. Come back here to leave comments.",
     access: () => "You’ll need to be signed in to Replit with an account that has access. If you land on Replit’s sign-in or no-access page, ask the builder to invite you or make the deployment public.",
   },
+  mantl: {
+    mark: "/mantl-mark.svg",
+    markTile: "",
+    surface: "bg-gradient-to-br from-marine-0 via-marine-0 to-marine-1",
+    fade: "from-marine-0 via-marine-0/95",
+    border: "border-marine-1",
+    soft: "bg-marine-1",
+    accent: "bg-marine-5/30",
+    ink: "text-marine-8",
+    button: "bg-marine-5 hover:bg-marine-6 active:bg-marine-7",
+    groupButton: "bg-marine-5 group-hover/brand:bg-marine-6",
+    badge: "bg-marine-0 text-marine-8",
+    thing: "Mantl prototype",
+    panelTitle: () => "This is a Mantl prototype",
+    panelBody: "A clickable recording of the real Console, published from Prototyping in Mantl.",
+    access: () => "You’ll need to be signed in to GitHub with myfintech access. The preview lives on a private GitHub Pages site.",
+  },
 };
 
 export function PlatformMark({ platform, className = "h-10 w-10" }: { platform: Platform; className?: string }) {

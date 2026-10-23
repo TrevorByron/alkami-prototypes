@@ -39,6 +39,17 @@ Open `http://127.0.0.1:5173/#/signin` after starting Vite. Restart Vite after ch
 
 The `check-embed` Edge Function decides whether a prototype can be shown in the live frame or should open in a new tab. If it has not been deployed yet, the Add prototype dialog falls back safely to new-tab mode so a prototype can still be added.
 
+## Prototypes from Prototyping in Mantl
+
+Prototypes shared from [myfintech/prototyping-in-mantl](https://github.com/myfintech/prototyping-in-mantl) (`pnpm share`) appear here on their own. Its `publish-site.yml` workflow calls the `register-prototype` Edge Function after each publish; the function upserts one row per shared branch (`source = 'mantl'`, `source_key = proto/<name>`), so re-sharing updates the same prototype and keeps its comments, and archiving sets `archived_at` instead of deleting. Rows are owned by a service account (`prototyping-in-mantl@alkami.com`, created on first use). The previews live on a private GitHub Pages site, so the viewer shows its sign-in card first.
+
+Setup, once:
+
+1. Apply `20261023100000_mantl_source.sql`.
+2. Deploy the function **without JWT verification**: `npx supabase functions deploy register-prototype --no-verify-jwt --project-ref <ref>` (the CI job does this too).
+3. Add the Edge Function secret `MANTL_REGISTER_SECRET` (any long random string) and make sure `APP_URL` is set.
+4. In the GitHub repository, add the secrets `ALKAMI_PROTOTYPES_REGISTER_URL` (`https://<ref>.supabase.co/functions/v1/register-prototype`) and `ALKAMI_PROTOTYPES_REGISTER_SECRET` (the same string).
+
 ## Deploying to GitLab Pages
 
 The default branch publishes the Vite build through the `pages` job. The Vite base path is derived from `CI_PAGES_URL`, so project Pages URLs work without a SPA fallback.

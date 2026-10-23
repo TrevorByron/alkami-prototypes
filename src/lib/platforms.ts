@@ -9,7 +9,12 @@ import type { EmbedMode } from "@/lib/types";
 // Replit: public deployments usually frame fine and keep the live preview.
 // Private deployments bounce visitors to Replit sign-in (X-Frame-Options:
 // DENY), which check-embed records as new_tab.
-export type PlatformId = "claude" | "replit";
+//
+// Mantl: previews published from Prototyping in Mantl (the shared GitHub
+// repository, one branch per prototype) live on a private GitHub Pages site.
+// They frame fine once the viewer is signed in to GitHub; the viewer shows its
+// sign-in card first (ViewerPage.tsx, needsSignIn).
+export type PlatformId = "claude" | "replit" | "mantl";
 
 export type Platform = {
   id: PlatformId;
@@ -29,6 +34,10 @@ export function detectPlatform(url: string, embedMode: EmbedMode): Platform | nu
   if (host === "claude.ai" || host.endsWith(".claude.ai")) {
     const isPublic = parsed.pathname.startsWith("/public/");
     return { id: "claude", name: "Claude", external: true, access: isPublic ? "public" : "restricted", subtitle: isPublic ? "Published on claude.ai" : "Shared on claude.ai" };
+  }
+
+  if (host.endsWith(".pages.github.io")) {
+    return { id: "mantl", name: "Mantl", external: false, access: "restricted", subtitle: "Prototyping in Mantl" };
   }
 
   if (/(^|\.)(replit\.app|replit\.dev|repl\.co|replit\.com)$/.test(host)) {

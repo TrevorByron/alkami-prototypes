@@ -61,9 +61,12 @@ export function usePrototypes() {
 
     setLoading(true);
     const [prototypeResult, commentsResult] = await Promise.all([
+      // Prototypes archived at their source (Prototyping in Mantl) keep their
+      // row and comments but leave the library.
       supabase
         .from("prototypes")
         .select("*")
+        .is("archived_at", null)
         .order("updated_at", { ascending: false }),
       supabase.from("comments").select("prototype_id").eq("status", "open"),
     ]);

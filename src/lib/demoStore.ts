@@ -48,7 +48,7 @@ export function getDemoPrototype(id: string) {
 
 export function createDemoPrototype(input: { name: string; url: string; description: string | null; owner_id: string; owner_slack_id: string | null; owner_name: string; slack_channel_id: string | null; slack_channel_name: string | null; embed_mode: "live" | "new_tab"; embed_reason: string; favicon_url: string | null; tags: string[]; }) {
   const timestamp = now();
-  const prototype: PrototypeSummary = { id: crypto.randomUUID(), ...input, created_by: demoProfile.id, created_at: timestamp, updated_at: timestamp, open_comment_count: 0 };
+  const prototype: PrototypeSummary = { id: crypto.randomUUID(), ...input, source: "manual", source_key: null, source_meta: null, archived_at: null, created_by: demoProfile.id, created_at: timestamp, updated_at: timestamp, open_comment_count: 0 };
   write(prototypesKey, [...read<PrototypeSummary>(prototypesKey), prototype]);
   return prototype;
 }

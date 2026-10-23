@@ -15,6 +15,13 @@ export type PrototypeSummary = {
   favicon_url: string | null;
   /** Category ids from src/lib/tags.ts. */
   tags: string[];
+  /** "manual" when added in the app, "mantl" when registered by Prototyping in Mantl. */
+  source: "manual" | "mantl";
+  /** For mantl: the proto/<name> branch. */
+  source_key: string | null;
+  source_meta: { name?: string; branch?: string; commit?: string; author?: string; gallery_url?: string; code_url?: string; handoff_url?: string | null; pages?: number } | null;
+  /** Set when the preview was taken down at the source; comments stay. */
+  archived_at: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;

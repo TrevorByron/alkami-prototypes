@@ -337,10 +337,14 @@ function ViewerError({ message }: { message: string }) { return <div className="
 // Browsers hide whether a cross-origin frame loaded or was refused, so this
 // can't be detected at runtime. check-embed stores this reason when the URL
 // redirects to a sign-in provider, and access-controlled GitLab Pages sites
-// always do, so treat gitlab.io as one too.
+// always do, so treat gitlab.io as one too. Private GitHub Pages sites (where
+// Prototyping in Mantl publishes) behave the same way.
 function needsSignIn(prototype: { url: string; embed_reason: string | null }) {
   if (prototype.embed_reason?.startsWith("This URL requires sign-in")) return true;
-  try { return new URL(prototype.url).hostname.endsWith(".gitlab.io"); } catch { return false; }
+  try {
+    const host = new URL(prototype.url).hostname;
+    return host.endsWith(".gitlab.io") || host.endsWith(".pages.github.io");
+  } catch { return false; }
 }
 
 function readSignInDone(prototypeId: string) {
