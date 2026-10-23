@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { ALKAMI_A_COLORS, ALKAMI_A_PIXELS } from "@/lib/alkamiMark";
 import { displayName } from "@/lib/names";
-import { fetchLeaderboard, placeOnBoard, recordRunnerScore, type ScoreEntry } from "@/lib/runnerScores";
+import { fetchLeaderboard, fetchMyStanding, ordinal, placeOnBoard, recordRunnerScore, type ScoreEntry } from "@/lib/runnerScores";
 
 // An easter egg: a 30px pixel critter now and then hops up into the library's
 // bottom-left corner, bounces there for a while, then ducks back out of view. Click it and the page fades behind a veil while the critter hops to
@@ -191,14 +191,19 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
     const me = userId ?? "you";
     const mineOnBoard = (rows: ScoreEntry[]) => (best > 0 ? placeOnBoard(rows, { id: me, name: myName, score: best }) : rows);
     let board: ScoreEntry[] = mineOnBoard([]);
+    // The player's overall place, for when they are outside the top 5.
+    let myRank: number | null = null;
     let newHigh = false;
     let active = true;
-    void fetchLeaderboard().then((rows) => {
-      if (!active || !rows) return;
-      const remoteBest = rows.find((row) => row.id === me)?.score ?? 0;
-      if (remoteBest > best) { best = remoteBest; saveBest(best); }
-      board = mineOnBoard(rows);
+    // Loads everyone's scores: on opening, and again after each run so other
+    // players' latest bests show up too.
+    const loadScores = () => Promise.all([fetchLeaderboard(), fetchMyStanding(userId)]).then(([rows, standing]) => {
+      if (!active) return;
+      if (standing && standing.best > best) { best = standing.best; saveBest(best); }
+      if (standing) myRank = standing.rank;
+      if (rows) board = mineOnBoard(rows);
     });
+    void loadScores();
     let obstacles: Obstacle[] = [];
     let coins: Coin[] = [];
     let sparks: Spark[] = [];
@@ -263,7 +268,7 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
           state = "over";
           if (score > best) { best = score; saveBest(best); }
           if (score > 0) {
-            void recordRunnerScore(score);
+            void recordRunnerScore(score).then(loadScores);
             newHigh = score > (board[0]?.score ?? 0);
             board = placeOnBoard(board, { id: me, name: myName, score });
           }
@@ -286,13 +291,25 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
       ctx.fillText(value, x, yPos);
     };
 
+    // The table's rows plus, when the player is outside the top 5, their own
+    // row with their overall rank underneath.
+    const tableRows = (live: number) => {
+      const rows = live > 0 ? placeOnBoard(board, { id: me, name: myName, score: live }) : board;
+      const mineScore = Math.max(best, live);
+      const extra = !rows.some((row) => row.id === me) && mineScore > 0 ? { rank: myRank ? ordinal(myRank) : "—", score: mineScore } : null;
+      return { rows, extra };
+    };
+
+    // Who to catch next: the lowest score on the board above this run.
+    const nextToBeat = () => board.filter((row) => row.id !== me && row.score >= score).sort((left, right) => left.score - right.score)[0] ?? null;
+
     // During the run: a compact table in the top-left corner, with this run
     // placed live so the player can see who they are about to pass.
     const drawMiniBoard = () => {
-      const rows = score > 0 ? placeOnBoard(board, { id: me, name: myName, score }) : board;
+      const { rows, extra } = tableRows(score);
       const rowH = 18;
       const panelW = 220;
-      const panelH = 34 + Math.max(rows.length, 1) * rowH + 6;
+      const panelH = 34 + Math.max(rows.length, 1) * rowH + (extra ? rowH + 6 : 0) + 6;
       const left = 20;
       const topY = 20;
       ctx.fillStyle = palette.ink;
@@ -309,6 +326,14 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
         text(name.length > 14 ? `${name.slice(0, 13)}…` : name, left + 32, rowY, 10, color, "left");
         text(String(row.id === me ? Math.max(row.score, score) : row.score), left + panelW - 12, rowY, 10, color, "right");
       });
+      if (extra) {
+        const rowY = topY + 42 + rows.length * rowH + 6;
+        ctx.fillStyle = palette.groundDash;
+        ctx.fillRect(left + 12, rowY - 16, panelW - 24, 2);
+        text(extra.rank, left + 12, rowY, 10, ALKAMI_A_COLORS.k, "left");
+        text("You", left + 44, rowY, 10, ALKAMI_A_COLORS.k, "left");
+        text(String(extra.score), left + panelW - 12, rowY, 10, ALKAMI_A_COLORS.k, "right");
+      }
     };
 
     // The arcade high-score table, drawn as a white pixel panel whose bottom
@@ -317,9 +342,10 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
     const drawBoard = (ground: number) => {
       const rowH = 24;
       const titled = state === "over";
-      const lines = Math.max(board.length, 1);
+      const { rows, extra } = tableRows(0);
+      const lines = Math.max(rows.length, 1);
       const panelW = Math.min(380, width - 32);
-      const panelH = 48 + (titled && newHigh ? 24 : 0) + lines * rowH + 12;
+      const panelH = 48 + (titled && newHigh ? 24 : 0) + lines * rowH + (extra ? rowH + 8 : 0) + 12;
       const left = Math.round(width / 2 - panelW / 2);
       const topY = ground - critterH - 24 - panelH;
       ctx.fillStyle = palette.ink;
@@ -329,14 +355,22 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
       text(titled ? "Game over" : "High scores", width / 2, topY + 30, 18, palette.ink);
       let rowY = topY + 60;
       if (titled && newHigh) { text("New high score!", width / 2, rowY - 4, 12, ALKAMI_A_COLORS.k); rowY += 24; }
-      if (!board.length) text("No scores yet. Be the first!", width / 2, rowY, 12, palette.muted);
-      board.forEach((row, index) => {
+      if (!rows.length) text("No scores yet. Be the first!", width / 2, rowY, 12, palette.muted);
+      rows.forEach((row, index) => {
         const color = row.id === me ? ALKAMI_A_COLORS.k : palette.ink;
         const name = displayName(row.name);
         text(ranks[index] ?? "", left + 20, rowY + index * rowH, 14, color, "left");
         text(name.length > 16 ? `${name.slice(0, 15)}…` : name, left + 76, rowY + index * rowH, 14, color, "left");
         text(String(row.score), left + panelW - 20, rowY + index * rowH, 14, color, "right");
       });
+      if (extra) {
+        const extraY = rowY + rows.length * rowH + 8;
+        ctx.fillStyle = palette.groundDash;
+        ctx.fillRect(left + 20, extraY - 20, panelW - 40, 2);
+        text(extra.rank, left + 20, extraY, 14, ALKAMI_A_COLORS.k, "left");
+        text("You", left + 76, extraY, 14, ALKAMI_A_COLORS.k, "left");
+        text(String(extra.score), left + panelW - 20, extraY, 14, ALKAMI_A_COLORS.k, "right");
+      }
     };
 
     const draw = (now: number) => {
@@ -387,6 +421,13 @@ function RunnerGame({ visible, startRect, onClose }: { visible: boolean; startRe
       text(String(score), width / 2 - 140 + 16, barY + 2, 24, palette.ink);
       text("High score", width / 2 + 140, barY - 30, 12, palette.muted);
       text(String(highScore), width / 2 + 140, barY + 2, 24, palette.ink);
+      // A target to chase while running.
+      if (state === "playing") {
+        const target = nextToBeat();
+        const others = board.some((row) => row.id !== me);
+        if (target) text(`Next to beat: ${displayName(target.name)} · ${target.score}`, width / 2, barY + 36, 12, palette.muted);
+        else if (others && score > 0) text("You're in first place!", width / 2, barY + 36, 12, ALKAMI_A_COLORS.k);
+      }
 
       if (state === "ready" || state === "over") drawBoard(ground);
       if (state === "playing") drawMiniBoard();
