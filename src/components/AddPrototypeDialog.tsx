@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { Loader2, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { isDemoMode } from "@/lib/demoMode";
 import { isOwnApp } from "@/lib/selfEmbed";
-import { createDemoPrototype } from "@/lib/demoStore";
+import { addDemoComment, createDemoPrototype } from "@/lib/demoStore";
 import { supabase } from "@/lib/supabase";
 import { prototypeTags, type PrototypeTagId } from "@/lib/tags";
 import type { EmbedCheck } from "@/lib/types";
@@ -102,6 +103,7 @@ export function AddPrototypeDialog({ open, onOpenChange, onCreated }: Props) {
     setSaving(true); setFormError(null);
     if (isDemoMode && user) {
       const demoPrototype = createDemoPrototype({ name: name.trim(), url: normalizeUrl(url), description: description.trim() || null, owner_id: user.id, owner_slack_id: null, owner_name: profile?.name ?? user.email ?? "Alkami teammate", slack_channel_id: null, slack_channel_name: null, embed_mode: check.embeddable ? "live" : "new_tab", embed_reason: check.reason, favicon_url: check.favicon_url, tags });
+      if (demoPrototype.description) addDemoComment({ prototype_id: demoPrototype.id, body: demoPrototype.description, page_url: null, screen_label: null, viewport: null, x_pct: null, y_pct: null, selector: null, scroll_y: null, snapshot_url: null });
       onCreated(); reset(); onOpenChange(false); navigate(`/p/${demoPrototype.id}`);
       return;
     }
@@ -113,6 +115,13 @@ export function AddPrototypeDialog({ open, onOpenChange, onCreated }: Props) {
       tags, created_by: user.id,
     }).select("id").single();
     if (error || !data) { setFormError(error?.message ?? "We could not save this prototype."); setSaving(false); return; }
+    // The description opens the comment thread as the builder's first comment.
+    // The prototype is already saved, so a failure here only warns.
+    const descriptionText = description.trim();
+    if (descriptionText) {
+      const { error: commentError } = await supabase.from("comments").insert({ prototype_id: data.id, author_id: user.id, body: descriptionText });
+      if (commentError) toast.error(`Prototype added, but the description could not be posted as a comment: ${commentError.message}`);
+    }
     onCreated(); reset(); onOpenChange(false); navigate(`/p/${data.id}`);
   }
 
