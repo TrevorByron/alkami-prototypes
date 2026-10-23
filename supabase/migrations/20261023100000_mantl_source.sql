@@ -8,7 +8,15 @@ alter table public.prototypes
   add column if not exists source text not null default 'manual',
   add column if not exists source_key text,
   add column if not exists source_meta jsonb,
-  add column if not exists archived_at timestamptz;
+  add column if not exists archived_at timestamptz,
+  add column if not exists thumbnail_url text;
+
+-- The gallery thumbnail (the prototype's first handoff screenshot), copied here
+-- because the Pages site itself is private. Public read; only the Edge
+-- Function (service role) writes.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('prototype-thumbnails', 'prototype-thumbnails', true, 4194304, array['image/png', 'image/jpeg', 'image/webp'])
+on conflict (id) do update set public = true, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
 alter table public.prototypes drop constraint if exists prototypes_source_check;
 alter table public.prototypes
@@ -26,3 +34,4 @@ comment on column public.prototypes.source is 'manual: added in the app. mantl: 
 comment on column public.prototypes.source_key is 'For mantl: the proto/<name> branch in myfintech/prototyping-in-mantl.';
 comment on column public.prototypes.source_meta is 'For mantl: branch, commit, author login, gallery/code/handoff links, page count.';
 comment on column public.prototypes.archived_at is 'Set when the preview was taken down at the source; the row and its comments stay.';
+comment on column public.prototypes.thumbnail_url is 'For mantl: public copy of the gallery thumbnail in the prototype-thumbnails bucket.';

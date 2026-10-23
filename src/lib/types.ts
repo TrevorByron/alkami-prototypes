@@ -22,6 +22,8 @@ export type PrototypeSummary = {
   source_meta: { name?: string; branch?: string; commit?: string; author?: string; gallery_url?: string; code_url?: string; handoff_url?: string | null; pages?: number } | null;
   /** Set when the preview was taken down at the source; comments stay. */
   archived_at: string | null;
+  /** For mantl: a public copy of the gallery thumbnail. */
+  thumbnail_url: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
