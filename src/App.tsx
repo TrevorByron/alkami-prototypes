@@ -9,6 +9,7 @@ import { AppMark } from "@/components/AppMark";
 import { PlatformPreview } from "@/components/Platform";
 import { HowItWorks } from "@/components/HowItWorks";
 import { NewTabLinks } from "@/components/NewTabLinks";
+import { PixelRunner } from "@/components/PixelRunner";
 import { UserAvatar, UserIdentity } from "@/components/UserIdentity";
 import { VibeCodeDialog } from "@/components/VibeCodeDialog";
 import { Badge } from "@/components/ui/badge";
@@ -115,6 +116,7 @@ function Library() {
         {loading ? <SkeletonGrid /> : error ? <LibraryError message={error} onRetry={() => void refresh()} /> : visible.length ? <LibraryGroups prototypes={visible} /> : filtering ? <EmptySearch /> : <EmptyLibrary onAdd={() => setAddOpen(true)} />}
       </main>
       <AddPrototypeDialog open={addOpen} onOpenChange={setAddOpen} onCreated={() => void refresh()} />
+      <PixelRunner />
     </div>
   );
 }

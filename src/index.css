@@ -233,6 +233,11 @@
     animation: pixel-reply 4.5s infinite;
   }
 
+  /* The corner critter (PixelRunner) bobs in two hard steps while it waits. */
+  .pixel-critter-idle {
+    animation: pixel-bob 1.4s steps(1, end) infinite;
+  }
+
   .pixel-notch {
     clip-path: var(--pixel-notch);
   }
@@ -260,6 +265,11 @@
     to { visibility: hidden; }
   }
 
+  @keyframes pixel-bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+  }
+
   @keyframes pixel-type {
     from { width: 0; animation-timing-function: steps(var(--chars), end); }
     45%, 100% { width: calc(var(--chars) * 1ch); }
@@ -271,7 +281,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .pixel-cursor::after, .pixel-type, .pixel-caret, .pixel-reply { animation: none; }
+    .pixel-cursor::after, .pixel-type, .pixel-caret, .pixel-reply, .pixel-critter-idle { animation: none; }
     .pixel-lift, .pixel-lift:hover, .pixel-lift:focus-within { transform: none; transition: none; }
   }
 }
