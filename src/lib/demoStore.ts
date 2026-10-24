@@ -4,6 +4,7 @@ const prototypesKey = "commentor:demo:prototypes";
 const commentsKey = "commentor:demo:comments";
 const repliesKey = "commentor:demo:replies";
 const upvotesKey = "commentor:demo:upvotes";
+const viewsKey = "commentor:demo:views";
 
 type DemoUpvote = { comment_id: string; user_id: string };
 
@@ -39,7 +40,21 @@ function write<T>(key: string, value: T[]) {
 function now() { return new Date().toISOString(); }
 
 export function listDemoPrototypes() {
-  return read<PrototypeSummary>(prototypesKey).map((prototype) => ({ ...prototype, tags: prototype.tags ?? [], open_comment_count: countOpenComments(prototype.id) }));
+  const comments = read<CommentRecord>(commentsKey);
+  const views = read<{ prototype_id: string; viewer_id: string }>(viewsKey);
+  return read<PrototypeSummary>(prototypesKey).map((prototype) => ({
+    ...prototype,
+    tags: prototype.tags ?? [],
+    open_comment_count: countOpenComments(prototype.id),
+    comment_times: comments.filter((comment) => comment.prototype_id === prototype.id).map((comment) => comment.created_at),
+    view_count: views.filter((view) => view.prototype_id === prototype.id).length,
+  }));
+}
+
+export function recordDemoView(prototypeId: string) {
+  const views = read<{ prototype_id: string; viewer_id: string }>(viewsKey);
+  if (views.some((view) => view.prototype_id === prototypeId && view.viewer_id === demoProfile.id)) return;
+  write(viewsKey, [...views, { prototype_id: prototypeId, viewer_id: demoProfile.id }]);
 }
 
 export function getDemoPrototype(id: string) {
@@ -96,6 +111,10 @@ export function addDemoReply(input: { comment_id: string; body: string }) {
 export function updateDemoComment(id: string, values: { status: "open" | "resolved"; resolved_by: string | null; resolved_at: string | null; resolution_note: string | null; }) {
   const next = read<CommentRecord>(commentsKey).map((comment) => comment.id === id ? { ...comment, ...values } : comment);
   write(commentsKey, next);
+}
+
+export function updateDemoCommentBody(id: string, body: string) {
+  write(commentsKey, read<CommentRecord>(commentsKey).map((comment) => (comment.id === id ? { ...comment, body } : comment)));
 }
 
 export function toggleDemoUpvote(commentId: string) {
