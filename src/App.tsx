@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Route, Routes } from "react-router-dom";
-import { ExternalLink, Eye, Hammer, LayoutGrid, MessageSquare, Plus, RotateCcw, Search, Users } from "lucide-react";
+import { ArrowDownUp, Check, ChevronDown, ExternalLink, Eye, Hammer, LayoutGrid, MessageSquare, Plus, RotateCcw, Search, Users } from "lucide-react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -21,7 +21,6 @@ import { SelectionPill } from "@/components/ui/selection-pill";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { type Contributor, useContributors } from "@/hooks/useContributors";
 import { usePrototypes } from "@/hooks/usePrototypes";
 import { startLibraryVisit, unreadCount } from "@/lib/activity";
@@ -108,23 +107,22 @@ function Library() {
         </div>
 
         <div className="mb-6 space-y-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
             <div className="relative w-full sm:max-w-sm">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-abyss-5" />
               <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search prototypes" className="pl-10" aria-label="Search prototypes" />
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <SelectionPill selected={mineOnly} onClick={() => setMineOnly((value) => !value)} title="Only prototypes you built">Mine</SelectionPill>
-              <ToggleGroup type="single" value={sort} onValueChange={(value) => { if (value) setSort(value as LibrarySort); }} aria-label="Sort prototypes" className="rounded-lg bg-carbon-1 p-1">
-                {(Object.keys(librarySorts) as LibrarySort[]).map((key) => <ToggleGroupItem key={key} value={key}>{librarySorts[key].label}</ToggleGroupItem>)}
-              </ToggleGroup>
-              <span className="text-xs text-abyss-5">{visible.length} of {prototypes.length}</span>
-            </div>
+            <span className="shrink-0 text-xs text-abyss-5">{visible.length} of {prototypes.length}</span>
           </div>
-          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by tag">
-            <SelectionPill selected={!tagFilter.length} onClick={() => setTagFilter([])}>All</SelectionPill>
-            {prototypeTags.map((tag) => { const selected = tagFilter.includes(tag.id); return <SelectionPill key={tag.id} selected={selected} title={tag.hint} onClick={() => setTagFilter((current) => selected ? current.filter((id) => id !== tag.id) : [...current, tag.id])}><span aria-hidden>{tag.emoji}</span>{tag.label}<span className={selected ? "text-marine-5" : "text-abyss-5"}>{tagCounts.get(tag.id)}</span></SelectionPill>; })}
+          <div className="flex flex-wrap items-center gap-2">
+            <SelectionPill selected={mineOnly} onClick={() => setMineOnly((value) => !value)} title="Only prototypes you built">Mine</SelectionPill>
+            <span className="h-6 w-px bg-carbon-3" aria-hidden />
+            <div className="contents" role="group" aria-label="Filter by tag">
+              <SelectionPill selected={!tagFilter.length} onClick={() => setTagFilter([])}>All</SelectionPill>
+              {prototypeTags.map((tag) => { const selected = tagFilter.includes(tag.id); return <SelectionPill key={tag.id} selected={selected} title={tag.hint} onClick={() => setTagFilter((current) => selected ? current.filter((id) => id !== tag.id) : [...current, tag.id])}><span aria-hidden>{tag.emoji}</span>{tag.label}<span className={selected ? "text-marine-5" : "text-abyss-5"}>{tagCounts.get(tag.id)}</span></SelectionPill>; })}
+            </div>
             {filtering ? <Button variant="ghost" onClick={() => { setQuery(""); setTagFilter([]); setMineOnly(false); }}>Clear filters</Button> : null}
+            <div className="ml-auto"><SortMenu sort={sort} onChange={setSort} /></div>
           </div>
         </div>
 
@@ -139,10 +137,30 @@ function Library() {
 type LibrarySort = "updated" | "newest" | "discussed";
 
 // The library's sort orders; each group (MANTL vibe codes, all others) keeps it.
-const librarySorts: Record<LibrarySort, { label: string; compare: (left: PrototypeSummary, right: PrototypeSummary) => number }> = {
-  updated: { label: "Recently updated", compare: (left, right) => right.updated_at.localeCompare(left.updated_at) },
-  newest: { label: "Newest", compare: (left, right) => right.created_at.localeCompare(left.created_at) },
-  discussed: { label: "Most discussed", compare: (left, right) => (right.comment_times?.length ?? 0) - (left.comment_times?.length ?? 0) || right.updated_at.localeCompare(left.updated_at) },
+// The library's sort order, picked from a small menu at the end of the filter
+// row. The button shows a short label so the row stays on one line.
+function SortMenu({ sort, onChange }: { sort: LibrarySort; onChange: (sort: LibrarySort) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild><Button variant="outline" size="sm" aria-label={`Sort: ${librarySorts[sort].label}`}><ArrowDownUp />{librarySorts[sort].short}<ChevronDown /></Button></PopoverTrigger>
+      <PopoverContent align="end" className="w-56 p-1">
+        <div role="menu" aria-label="Sort prototypes">
+          {(Object.keys(librarySorts) as LibrarySort[]).map((key) => (
+            <button key={key} type="button" role="menuitemradio" aria-checked={key === sort} onClick={() => { onChange(key); setOpen(false); }} className="flex w-full items-center gap-2 rounded px-2 py-2 text-left text-sm text-abyss-9 hover:bg-carbon-0 [&_svg]:h-4 [&_svg]:w-4">
+              <Check className={key === sort ? "text-marine-5" : "invisible"} />{librarySorts[key].label}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+const librarySorts: Record<LibrarySort, { label: string; short: string; compare: (left: PrototypeSummary, right: PrototypeSummary) => number }> = {
+  updated: { label: "Recently updated", short: "Updated", compare: (left, right) => right.updated_at.localeCompare(left.updated_at) },
+  newest: { label: "Newest", short: "Newest", compare: (left, right) => right.created_at.localeCompare(left.created_at) },
+  discussed: { label: "Most discussed", short: "Discussed", compare: (left, right) => (right.comment_times?.length ?? 0) - (left.comment_times?.length ?? 0) || right.updated_at.localeCompare(left.updated_at) },
 };
 
 // The previous library visit in this browser, read once per page load, so
