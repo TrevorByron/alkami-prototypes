@@ -23,6 +23,8 @@ type Payload = {
   handoffUrl: string | null;
   pages: number;
   archived: boolean;
+  /** The gallery name of the prototype this one was started from, if any. */
+  basedOn: string | null;
   thumbnail: { base64: string; contentType: string } | null;
 };
 
@@ -88,6 +90,7 @@ function parse(body: unknown): Payload | string {
     handoffUrl: httpsUrl(input.handoffUrl),
     pages: Number.isFinite(Number(input.pages)) ? Math.max(0, Math.floor(Number(input.pages))) : 0,
     archived: input.archived === true,
+    basedOn: /^[a-z0-9][a-z0-9-]{0,59}$/.test(text(input.basedOn, 60)) ? text(input.basedOn, 60) : null,
     thumbnail,
   };
 }
@@ -177,6 +180,7 @@ Deno.serve(async (request) => {
         code_url: payload.codeUrl,
         handoff_url: payload.handoffUrl,
         pages: payload.pages,
+        based_on: payload.basedOn,
         registered_at: new Date().toISOString(),
       },
       archived_at: payload.archived ? new Date().toISOString() : null,

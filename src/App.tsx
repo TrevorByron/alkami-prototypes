@@ -225,12 +225,12 @@ function LibraryGroup({ title, count, description, mark, prototypes, onTagsChang
           <p className="mt-0.5 text-sm text-abyss-5">{description}</p>
         </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{prototypes.map((prototype) => <PrototypeCard key={prototype.id} prototype={prototype} onTagsChange={(tags) => onTagsChange(prototype.id, tags)} />)}</div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{prototypes.map((prototype) => <PrototypeCard key={prototype.id} prototype={prototype} related={prototypes} onTagsChange={(tags) => onTagsChange(prototype.id, tags)} />)}</div>
     </section>
   );
 }
 
-function PrototypeCard({ prototype, onTagsChange }: { prototype: PrototypeSummary; onTagsChange: (tags: string[]) => void }) {
+function PrototypeCard({ prototype, related = [], onTagsChange }: { prototype: PrototypeSummary; related?: PrototypeSummary[]; onTagsChange: (tags: string[]) => void }) {
   const { user } = useAuth();
   const platform = detectPlatform(prototype.url, prototype.embed_mode);
   const viewerUrl = `/p/${prototype.id}`;
@@ -240,6 +240,11 @@ function PrototypeCard({ prototype, onTagsChange }: { prototype: PrototypeSummar
   // New since this browser's last visit, unless you added it yourself.
   const cutoff = libraryVisitCutoff();
   const isNew = Boolean(cutoff && prototype.created_at > cutoff && user?.id !== prototype.owner_id && user?.id !== prototype.created_by);
+  // A MANTL prototype started from another one (pnpm start-from) says so,
+  // linking to that one's page here when it is in the library, else to the gallery.
+  const basedOn = prototype.source === "mantl" ? prototype.source_meta?.based_on ?? null : null;
+  const parent = basedOn ? related.find((candidate) => candidate.source === "mantl" && candidate.source_meta?.name === basedOn) ?? null : null;
+  const parentUrl = parent ? `/p/${parent.id}` : basedOn && prototype.source_meta?.gallery_url ? `${prototype.source_meta.gallery_url}${basedOn}/` : null;
   // Prototypes from Prototyping in MANTL and other private GitHub Pages sites
   // can't be framed: their preview is the gallery thumbnail, the card opens the
   // site, its handoff notes and its code in new tabs, and its name and
@@ -269,6 +274,7 @@ function PrototypeCard({ prototype, onTagsChange }: { prototype: PrototypeSummar
           {comments || newTabOnly ? <><span aria-hidden>·</span><Link to={viewerUrl} className="flex shrink-0 items-center gap-1 hover:text-marine-5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marine-2" aria-label={`${comments} comments${unread ? `, ${unread} new` : ""}`}><MessageSquare className="h-3.5 w-3.5" />{comments}{unread ? <span className="pixel-notch bg-marine-5 px-1 text-[10px] leading-4 text-abyss-0">{unread} new</span> : null}</Link></> : null}
           {views ? <><span aria-hidden>·</span><span className="flex shrink-0 items-center gap-1" title={`${views} ${views === 1 ? "person has" : "people have"} opened this`}><Eye className="h-3.5 w-3.5" />{views}</span></> : null}
         </div>
+        {basedOn ? <p className="text-xs text-abyss-5">Based on {parent ? <Link to={parentUrl!} className="text-marine-5 hover:underline">{parent.name}</Link> : parentUrl ? <a href={parentUrl} target="_blank" rel="noopener noreferrer" className="text-marine-5 hover:underline">{basedOn}</a> : basedOn}</p> : null}
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-2 [&_svg]:!h-4 [&_svg]:!w-4">
           {newTabOnly ? <NewTabLinks prototype={prototype} /> : <>
             <Button asChild><Link to={viewerUrl}>Open</Link></Button>
