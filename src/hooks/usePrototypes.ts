@@ -60,7 +60,7 @@ export function usePrototypes() {
     }
 
     setLoading(true);
-    const [prototypeResult, commentsResult] = await Promise.all([
+    const [prototypeResult, commentsResult, viewsResult] = await Promise.all([
       // Prototypes archived at their source (Prototyping in MANTL) keep their
       // row and comments but leave the library.
       supabase
@@ -68,7 +68,10 @@ export function usePrototypes() {
         .select("*")
         .is("archived_at", null)
         .order("updated_at", { ascending: false }),
-      supabase.from("comments").select("prototype_id").eq("status", "open"),
+      supabase.from("comments").select("prototype_id, status, created_at"),
+      // Optional: until the prototype_views migration is applied this errors
+      // and every card just shows no view count.
+      supabase.from("prototype_views").select("prototype_id"),
     ]);
 
     if (prototypeResult.error || commentsResult.error) {
@@ -78,12 +81,18 @@ export function usePrototypes() {
     }
 
     const openComments = new Map<string, number>();
+    const commentTimes = new Map<string, string[]>();
     for (const comment of commentsResult.data ?? []) {
-      openComments.set(comment.prototype_id, (openComments.get(comment.prototype_id) ?? 0) + 1);
+      if (comment.status === "open") openComments.set(comment.prototype_id, (openComments.get(comment.prototype_id) ?? 0) + 1);
+      commentTimes.set(comment.prototype_id, [...(commentTimes.get(comment.prototype_id) ?? []), comment.created_at as string]);
+    }
+    const views = new Map<string, number>();
+    for (const view of viewsResult.error ? [] : viewsResult.data ?? []) {
+      views.set(view.prototype_id, (views.get(view.prototype_id) ?? 0) + 1);
     }
     const next = (prototypeResult.data ?? []).map((prototype) => {
       const row = prototype as PrototypeSummary;
-      return { ...row, tags: row.tags ?? [], open_comment_count: openComments.get(row.id) ?? 0 };
+      return { ...row, tags: row.tags ?? [], open_comment_count: openComments.get(row.id) ?? 0, comment_times: commentTimes.get(row.id) ?? [], view_count: views.get(row.id) ?? 0 };
     });
     setPrototypes(next);
     setError(null);

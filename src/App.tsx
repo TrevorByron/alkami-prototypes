@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, Route, Routes } from "react-router-dom";
-import { ExternalLink, Hammer, LayoutGrid, Plus, RotateCcw, Search, Users } from "lucide-react";
+import { ExternalLink, Eye, Hammer, LayoutGrid, MessageSquare, Plus, RotateCcw, Search, Users } from "lucide-react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -8,7 +8,7 @@ import { AddPrototypeDialog } from "@/components/AddPrototypeDialog";
 import { AppMark } from "@/components/AppMark";
 import { PlatformPreview } from "@/components/Platform";
 import { HowItWorks } from "@/components/HowItWorks";
-import { NewTabLinks } from "@/components/NewTabLinks";
+import { MantlPreview, NewTabLinks } from "@/components/NewTabLinks";
 import { PixelRunner } from "@/components/PixelRunner";
 import { TagButton } from "@/components/TagEditor";
 import { UserAvatar, UserIdentity } from "@/components/UserIdentity";
@@ -21,8 +21,10 @@ import { SelectionPill } from "@/components/ui/selection-pill";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { type Contributor, useContributors } from "@/hooks/useContributors";
 import { usePrototypes } from "@/hooks/usePrototypes";
+import { startLibraryVisit, unreadCount } from "@/lib/activity";
 import { isDemoMode } from "@/lib/demoMode";
 import { detectPlatform, opensInNewTabOnly } from "@/lib/platforms";
 import { displayName } from "@/lib/names";
@@ -70,11 +72,17 @@ function Library() {
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const { prototypes, loading, error, refresh, patch } = usePrototypes();
+  const { user } = useAuth();
+  const [sort, setSort] = useState<LibrarySort>("updated");
+  const [mineOnly, setMineOnly] = useState(false);
+  const isMine = (prototype: PrototypeSummary) => Boolean(user && (prototype.owner_id === user.id || prototype.created_by === user.id));
   const matchesQuery = (prototype: PrototypeSummary) => `${prototype.name} ${prototype.url} ${prototype.owner_name} ${prototype.tags.map((id) => tagInfo(id)?.label ?? "").join(" ")}`.toLowerCase().includes(query.toLowerCase());
   // Selecting several tags shows prototypes that have any of them.
-  const visible = prototypes.filter((prototype) => matchesQuery(prototype) && (!tagFilter.length || prototype.tags.some((id) => tagFilter.includes(id))));
+  const visible = prototypes
+    .filter((prototype) => matchesQuery(prototype) && (!tagFilter.length || prototype.tags.some((id) => tagFilter.includes(id))) && (!mineOnly || isMine(prototype)))
+    .sort(librarySorts[sort].compare);
   const tagCounts = new Map(prototypeTags.map((tag) => [tag.id, prototypes.filter((prototype) => matchesQuery(prototype) && prototype.tags.includes(tag.id)).length]));
-  const filtering = Boolean(query || tagFilter.length);
+  const filtering = Boolean(query || tagFilter.length || mineOnly);
   const contributors = useContributors();
   const builders = builderCount(prototypes);
 
@@ -105,12 +113,18 @@ function Library() {
               <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-abyss-5" />
               <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search prototypes" className="pl-10" aria-label="Search prototypes" />
             </div>
-            <span className="text-xs text-abyss-5">{visible.length} of {prototypes.length} prototypes</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <SelectionPill selected={mineOnly} onClick={() => setMineOnly((value) => !value)} title="Only prototypes you built">Mine</SelectionPill>
+              <ToggleGroup type="single" value={sort} onValueChange={(value) => { if (value) setSort(value as LibrarySort); }} aria-label="Sort prototypes" className="rounded-lg bg-carbon-1 p-1">
+                {(Object.keys(librarySorts) as LibrarySort[]).map((key) => <ToggleGroupItem key={key} value={key}>{librarySorts[key].label}</ToggleGroupItem>)}
+              </ToggleGroup>
+              <span className="text-xs text-abyss-5">{visible.length} of {prototypes.length}</span>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by tag">
             <SelectionPill selected={!tagFilter.length} onClick={() => setTagFilter([])}>All</SelectionPill>
             {prototypeTags.map((tag) => { const selected = tagFilter.includes(tag.id); return <SelectionPill key={tag.id} selected={selected} title={tag.hint} onClick={() => setTagFilter((current) => selected ? current.filter((id) => id !== tag.id) : [...current, tag.id])}><span aria-hidden>{tag.emoji}</span>{tag.label}<span className={selected ? "text-marine-5" : "text-abyss-5"}>{tagCounts.get(tag.id)}</span></SelectionPill>; })}
-            {filtering ? <Button variant="ghost" onClick={() => { setQuery(""); setTagFilter([]); }}>Clear filters</Button> : null}
+            {filtering ? <Button variant="ghost" onClick={() => { setQuery(""); setTagFilter([]); setMineOnly(false); }}>Clear filters</Button> : null}
           </div>
         </div>
 
@@ -120,6 +134,23 @@ function Library() {
       <PixelRunner />
     </div>
   );
+}
+
+type LibrarySort = "updated" | "newest" | "discussed";
+
+// The library's sort orders; each group (MANTL vibe codes, all others) keeps it.
+const librarySorts: Record<LibrarySort, { label: string; compare: (left: PrototypeSummary, right: PrototypeSummary) => number }> = {
+  updated: { label: "Recently updated", compare: (left, right) => right.updated_at.localeCompare(left.updated_at) },
+  newest: { label: "Newest", compare: (left, right) => right.created_at.localeCompare(left.created_at) },
+  discussed: { label: "Most discussed", compare: (left, right) => (right.comment_times?.length ?? 0) - (left.comment_times?.length ?? 0) || right.updated_at.localeCompare(left.updated_at) },
+};
+
+// The previous library visit in this browser, read once per page load, so
+// prototypes added since then get a "New" badge. Null on a first visit.
+let visitCutoff: string | null | undefined;
+function libraryVisitCutoff() {
+  if (visitCutoff === undefined) visitCutoff = startLibraryVisit();
+  return visitCutoff;
 }
 
 const statTones = {
@@ -150,8 +181,9 @@ function ContributorsCard({ contributors }: { contributors: Contributor[] }) {
   );
 }
 
-// The library card is the preview, who built it and the two ways in. The
-// description, tags and delete live in the viewer.
+// The library card is the preview, who built it, its comments (with how many
+// are new to you) and views, and the ways in. The description, tags and
+// delete live in the viewer.
 // Prototypes from Prototyping in MANTL behave a little differently (they open
 // in a new tab with handoff and code links, and are archived at the source),
 // so they get their own group above everything added by hand.
@@ -182,17 +214,24 @@ function LibraryGroup({ title, count, description, mark, prototypes, onTagsChang
 }
 
 function PrototypeCard({ prototype, onTagsChange }: { prototype: PrototypeSummary; onTagsChange: (tags: string[]) => void }) {
+  const { user } = useAuth();
   const platform = detectPlatform(prototype.url, prototype.embed_mode);
   const viewerUrl = `/p/${prototype.id}`;
-  const comments = prototype.open_comment_count;
+  const comments = prototype.comment_times?.length ?? prototype.open_comment_count;
+  const unread = unreadCount(prototype.id, prototype.comment_times);
+  const views = prototype.view_count ?? 0;
+  // New since this browser's last visit, unless you added it yourself.
+  const cutoff = libraryVisitCutoff();
+  const isNew = Boolean(cutoff && prototype.created_at > cutoff && user?.id !== prototype.owner_id && user?.id !== prototype.created_by);
   // Prototypes from Prototyping in MANTL and other private GitHub Pages sites
-  // can't be framed or discussed here: their preview is the gallery thumbnail,
-  // the card opens the site, its handoff notes and its code in new tabs, and
-  // tags are edited from the card (there is no viewer page to do it in).
+  // can't be framed: their preview is the gallery thumbnail, the card opens the
+  // site, its handoff notes and its code in new tabs, and its name and
+  // comments link lead to its page for the conversation.
   const newTabOnly = opensInNewTabOnly(prototype);
   const previewClass = "relative block h-44 overflow-hidden border-b-2 border-carbon-2 bg-carbon-1 focus-visible:outline-none";
   const preview = <>
-    {prototype.thumbnail_url ? <img src={prototype.thumbnail_url} alt="" loading="lazy" className="h-full w-full object-cover object-left-top" /> : platform?.external ? <PlatformPreview platform={platform} /> : prototype.embed_mode === "live" && !newTabOnly ? <div className="pointer-events-none absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.3] bg-abyss-0"><iframe title={`${prototype.name} preview`} src={prototype.url} loading="lazy" tabIndex={-1} className="h-full w-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads" /></div> : <div className="flex h-full items-center justify-center text-xs text-abyss-5">Opens in a new tab</div>}
+    {isNew ? <span className="pixel-notch absolute left-3 top-3 z-10 bg-tiaga-6 px-2 py-0.5 font-pixel text-xs text-abyss-0">New</span> : null}
+    {prototype.thumbnail_url ? <img src={prototype.thumbnail_url} alt="" loading="lazy" className="h-full w-full object-cover object-left-top" /> : platform?.external ? <PlatformPreview platform={platform} /> : prototype.embed_mode === "live" && !newTabOnly ? <div className="pointer-events-none absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.3] bg-abyss-0"><iframe title={`${prototype.name} preview`} src={prototype.url} loading="lazy" tabIndex={-1} className="h-full w-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads" /></div> : newTabOnly ? <MantlPreview prototype={prototype} /> : <div className="flex h-full items-center justify-center text-xs text-abyss-5">Opens in a new tab</div>}
   </>;
 
   return (
@@ -202,7 +241,7 @@ function PrototypeCard({ prototype, onTagsChange }: { prototype: PrototypeSummar
         : <Link to={viewerUrl} className={previewClass} aria-label={`Open ${prototype.name}`}>{preview}</Link>}
       <div className="flex flex-1 flex-col gap-1.5 px-5 pb-4 pt-3">
         <div className="flex min-w-0 items-center justify-between gap-2">
-          <h3 className="truncate text-base leading-5 text-abyss-9">{prototype.name}</h3>
+          <h3 className="truncate text-base leading-5 text-abyss-9">{newTabOnly ? <Link to={viewerUrl} className="hover:text-marine-5 hover:underline focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marine-2">{prototype.name}</Link> : prototype.name}</h3>
           {newTabOnly ? <div className="shrink-0 [&_button]:min-h-7 [&_button]:px-2 [&_svg]:!h-4 [&_svg]:!w-4"><TagButton prototypeId={prototype.id} tags={prototype.tags} onChange={onTagsChange} /></div> : null}
         </div>
         <div className="flex min-w-0 items-center gap-1.5 text-xs text-abyss-5">
@@ -210,7 +249,8 @@ function PrototypeCard({ prototype, onTagsChange }: { prototype: PrototypeSummar
           <span className="truncate">{displayName(prototype.owner_name)}</span>
           <span aria-hidden>·</span>
           <span className="shrink-0">{formatRelativeTime(prototype.updated_at)}</span>
-          {comments && !newTabOnly ? <><span aria-hidden>·</span><span className="shrink-0">{comments} comment{comments === 1 ? "" : "s"}</span></> : null}
+          {comments || newTabOnly ? <><span aria-hidden>·</span><Link to={viewerUrl} className="flex shrink-0 items-center gap-1 hover:text-marine-5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-marine-2" aria-label={`${comments} comments${unread ? `, ${unread} new` : ""}`}><MessageSquare className="h-3.5 w-3.5" />{comments}{unread ? <span className="pixel-notch bg-marine-5 px-1 text-[10px] leading-4 text-abyss-0">{unread} new</span> : null}</Link></> : null}
+          {views ? <><span aria-hidden>·</span><span className="flex shrink-0 items-center gap-1" title={`${views} ${views === 1 ? "person has" : "people have"} opened this`}><Eye className="h-3.5 w-3.5" />{views}</span></> : null}
         </div>
         <div className="mt-auto flex flex-wrap items-center gap-2 pt-2 [&_svg]:!h-4 [&_svg]:!w-4">
           {newTabOnly ? <NewTabLinks prototype={prototype} /> : <>

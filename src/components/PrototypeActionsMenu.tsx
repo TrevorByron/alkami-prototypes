@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { ArrowLeft, ChevronDown, ExternalLink, Link2, Loader2, LockKeyhole, Tag, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, ExternalLink, Link2, Loader2, LockKeyhole, Pencil, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { EditDetailsDialog } from "@/components/EditDetailsDialog";
 import { EditLinkDialog } from "@/components/EditLinkDialog";
 import { TagPicker } from "@/components/TagEditor";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { deletePrototype } from "@/hooks/usePrototypes";
 import type { Platform } from "@/lib/platforms";
-import type { PrototypeSummary } from "@/lib/types";
+import type { CommentRecord, PrototypeSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -22,15 +23,19 @@ type Props = {
   onSignIn: (() => void) | null;
   onOpen: () => void;
   onLinkSaved: () => void;
+  /** The builder's pinned description comment, kept in step by Edit details. */
+  descriptionComment: CommentRecord | null;
+  onDetailsSaved: () => void;
   onDeleted: () => void;
 };
 
 // The viewer's prototype actions, gathered in one menu. Tags are edited inside
 // the menu; the link and delete open their own dialogs.
-export function PrototypeActionsMenu({ prototype, platform, tags, onTagsChange, onSignIn, onOpen, onLinkSaved, onDeleted }: Props) {
+export function PrototypeActionsMenu({ prototype, platform, tags, onTagsChange, onSignIn, onOpen, onLinkSaved, descriptionComment, onDetailsSaved, onDeleted }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [view, setView] = useState<"actions" | "tags">("actions");
   const [linkOpen, setLinkOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   // Close the menu first, then run the action, so a dialog never opens under it.
@@ -49,6 +54,7 @@ export function PrototypeActionsMenu({ prototype, platform, tags, onTagsChange, 
           ) : (
             <div role="menu" aria-label="Prototype actions">
               {onSignIn ? <MenuItem icon={<LockKeyhole />} onClick={choose(onSignIn)}>Sign in</MenuItem> : null}
+              <MenuItem icon={<Pencil />} onClick={choose(() => setDetailsOpen(true))}>Edit details</MenuItem>
               <MenuItem icon={<Tag />} onClick={() => setView("tags")}>{tags.length ? "Edit tags" : "Add tags"}</MenuItem>
               <MenuItem icon={<ExternalLink />} onClick={choose(onOpen)}>{platform ? `Open in ${platform.name}` : "Open in new tab"}</MenuItem>
               <MenuItem icon={<Link2 />} onClick={choose(() => setLinkOpen(true))}>Edit link</MenuItem>
@@ -58,6 +64,7 @@ export function PrototypeActionsMenu({ prototype, platform, tags, onTagsChange, 
           )}
         </PopoverContent>
       </Popover>
+      <EditDetailsDialog prototype={prototype} descriptionComment={descriptionComment} open={detailsOpen} onOpenChange={setDetailsOpen} onSaved={onDetailsSaved} />
       <EditLinkDialog prototype={prototype} open={linkOpen} onOpenChange={setLinkOpen} onSaved={onLinkSaved} />
       <DeletePrototypeDialog id={prototype.id} name={prototype.name} open={deleteOpen} onOpenChange={setDeleteOpen} onDeleted={onDeleted} />
     </>

@@ -28,6 +28,10 @@ export type PrototypeSummary = {
   created_at: string;
   updated_at: string;
   open_comment_count: number;
+  /** When each comment on it was posted; the library counts the unread ones. */
+  comment_times?: string[];
+  /** How many members have opened it (prototype_views). */
+  view_count?: number;
 };
 
 export type SlackUser = {

@@ -47,11 +47,11 @@ export function detectPlatform(url: string, embedMode: EmbedMode): Platform | nu
   return null;
 }
 
-// Prototypes that are only ever opened in their own tab, never framed or
-// discussed here: everything from Prototyping in MANTL and any other private
-// GitHub Pages site. GitHub's sign-in for private Pages only works in a full
-// tab, so the viewer can't show them; the library offers the site, its
-// handoff notes and its code instead.
+// Prototypes that are only ever opened in their own tab, never framed:
+// everything from Prototyping in MANTL and any other private GitHub Pages
+// site. GitHub's sign-in for private Pages only works in a full tab, so their
+// page shows the site, its handoff notes and its code to open, beside the
+// comments.
 export function opensInNewTabOnly(prototype: { url: string; source?: string | null }) {
   if (prototype.source === "mantl") return true;
   try { return new URL(prototype.url).hostname.endsWith(".pages.github.io"); } catch { return false; }
