@@ -72,7 +72,7 @@ function Library() {
   const [addOpen, setAddOpen] = useState(false);
   const { prototypes, loading, error, refresh, patch } = usePrototypes();
   const { user } = useAuth();
-  const [sort, setSort] = useState<LibrarySort>("updated");
+  const [sort, setSort] = useState<LibrarySort>("newest");
   const [mineOnly, setMineOnly] = useState(false);
   const isMine = (prototype: PrototypeSummary) => Boolean(user && (prototype.owner_id === user.id || prototype.created_by === user.id));
   const matchesQuery = (prototype: PrototypeSummary) => `${prototype.name} ${prototype.url} ${prototype.owner_name} ${prototype.tags.map((id) => tagInfo(id)?.label ?? "").join(" ")}`.toLowerCase().includes(query.toLowerCase());
@@ -134,7 +134,7 @@ function Library() {
   );
 }
 
-type LibrarySort = "updated" | "newest" | "discussed";
+type LibrarySort = "discussed" | "newest";
 
 // The library's sort orders; each group (MANTL vibe codes, all others) keeps it.
 // The library's sort order, picked from a small menu at the end of the filter
@@ -158,9 +158,8 @@ function SortMenu({ sort, onChange }: { sort: LibrarySort; onChange: (sort: Libr
 }
 
 const librarySorts: Record<LibrarySort, { label: string; short: string; compare: (left: PrototypeSummary, right: PrototypeSummary) => number }> = {
-  updated: { label: "Recently updated", short: "Updated", compare: (left, right) => right.updated_at.localeCompare(left.updated_at) },
-  newest: { label: "Newest", short: "Newest", compare: (left, right) => right.created_at.localeCompare(left.created_at) },
   discussed: { label: "Most discussed", short: "Discussed", compare: (left, right) => (right.comment_times?.length ?? 0) - (left.comment_times?.length ?? 0) || right.updated_at.localeCompare(left.updated_at) },
+  newest: { label: "Newest", short: "Newest", compare: (left, right) => right.created_at.localeCompare(left.created_at) },
 };
 
 // The previous library visit in this browser, read once per page load, so
