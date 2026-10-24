@@ -1,4 +1,4 @@
-import { Code2, ExternalLink, FileText } from "lucide-react";
+import { Code2, ExternalLink, FileText, GitFork } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,17 +6,38 @@ import { recordView } from "@/lib/activity";
 import type { PrototypeSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-// The ways into a prototype that opens in its own tab: the site itself, and
-// for Prototyping in MANTL its handoff notes and code. Each opens a new tab;
-// the external-link icon on Open says so, where the library's in-app Open
-// (to the viewer) has no icon.
-export function NewTabLinks({ prototype, size }: { prototype: PrototypeSummary; size?: "lg" }) {
+// A square keycap with one icon and a tooltip, the same treatment as the
+// Prototyping in MANTL gallery: a 2px border on a solid bottom edge, pressed
+// down on click. The tooltip is a sibling, so it shows on hover and on focus.
+function IconLink({ href, label, tip, download, children }: { href: string; label: string; tip: string; download?: boolean; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      target={download ? undefined : "_blank"}
+      rel={download ? undefined : "noopener noreferrer"}
+      aria-label={label}
+      className="group/key relative inline-grid h-8 w-8 shrink-0 place-items-center rounded-md border-2 border-carbon-3 bg-abyss-0 text-abyss-9 shadow-[0_3px_0_0_hsl(var(--color-carbon-3))] transition-colors hover:border-marine-2 hover:text-marine-5 hover:shadow-[0_3px_0_0_hsl(var(--color-marine-2))] focus-visible:border-marine-2 focus-visible:text-marine-5 focus-visible:outline-none focus-visible:shadow-[0_3px_0_0_hsl(var(--color-marine-2))] active:translate-y-[3px] active:shadow-none [&_svg]:h-[18px] [&_svg]:w-[18px]"
+    >
+      {children}
+      <span role="tooltip" className="pixel-notch pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max max-w-[15rem] -translate-x-1/2 bg-carbon-9 px-2.5 py-1.5 text-center text-xs font-normal leading-4 text-abyss-0 opacity-0 transition-opacity group-hover/key:opacity-100 group-focus-visible/key:opacity-100">{tip}</span>
+    </a>
+  );
+}
+
+// The ways into a prototype that opens in its own tab: Open (the site itself,
+// in a new tab, which the external-link icon says), then for Prototyping in
+// MANTL three keycaps: its handoff notes, its code, and "Build on this", the
+// download of a copy that becomes the reader's own prototype (the library's
+// in-app Open, to the viewer, has no icon). An archived prototype has no copy.
+export function NewTabLinks({ prototype }: { prototype: PrototypeSummary }) {
   const meta = prototype.source === "mantl" ? prototype.source_meta : null;
+  const download = meta?.download_url && !prototype.archived_at ? meta.download_url : null;
   return (
     <>
-      <Button asChild size={size}><a href={prototype.url} target="_blank" rel="noopener noreferrer" onClick={() => void recordView(prototype.id)} aria-label={`Open ${prototype.name} in a new tab`}><ExternalLink />Open</a></Button>
-      {meta?.handoff_url ? <Button asChild variant="outline" size={size}><a href={meta.handoff_url} target="_blank" rel="noopener noreferrer"><FileText />Handoff</a></Button> : null}
-      {meta?.code_url ? <Button asChild variant="outline" size={size}><a href={meta.code_url} target="_blank" rel="noopener noreferrer"><Code2 />Code</a></Button> : null}
+      <Button asChild><a href={prototype.url} target="_blank" rel="noopener noreferrer" onClick={() => void recordView(prototype.id)} aria-label={`Open ${prototype.name} in a new tab`}><ExternalLink />Open</a></Button>
+      {meta?.handoff_url ? <IconLink href={meta.handoff_url} label="Handoff" tip="Handoff notes: what was built and how, for engineers"><FileText /></IconLink> : null}
+      {meta?.code_url ? <IconLink href={meta.code_url} label="Code" tip={`The code on GitHub${meta.branch ? ` (branch ${meta.branch})` : ""}`}><Code2 /></IconLink> : null}
+      {download ? <IconLink href={download} label="Build on this" tip="Build on this: downloads a copy of this prototype. Open it in Claude Code and say “share this” to publish your own version." download><GitFork /></IconLink> : null}
     </>
   );
 }

@@ -250,14 +250,15 @@ function PrototypeCard({ prototype, related = [], onTagsChange }: { prototype: P
   // site, its handoff notes and its code in new tabs, and its name and
   // comments link lead to its page for the conversation.
   const newTabOnly = opensInNewTabOnly(prototype);
-  const previewClass = "relative block h-44 overflow-hidden border-b-2 border-carbon-2 bg-carbon-1 focus-visible:outline-none";
+  // The card no longer clips (its keycaps' tooltips rise above it), so the preview rounds its own top corners.
+  const previewClass = "relative block h-44 overflow-hidden rounded-t-[6px] border-b-2 border-carbon-2 bg-carbon-1 focus-visible:outline-none";
   const preview = <>
     {isNew ? <span className="pixel-notch absolute left-3 top-3 z-10 bg-tiaga-6 px-2 py-0.5 font-pixel text-xs text-abyss-0">New</span> : null}
     {prototype.thumbnail_url ? <img src={prototype.thumbnail_url} alt="" loading="lazy" className="h-full w-full object-cover object-left-top" /> : platform?.external ? <PlatformPreview platform={platform} /> : prototype.embed_mode === "live" && !newTabOnly ? <div className="pointer-events-none absolute left-0 top-0 h-[720px] w-[1280px] origin-top-left scale-[0.3] bg-abyss-0"><iframe title={`${prototype.name} preview`} src={prototype.url} loading="lazy" tabIndex={-1} className="h-full w-full border-0" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals allow-downloads" /></div> : newTabOnly ? <MantlPreview prototype={prototype} /> : <div className="flex h-full items-center justify-center text-xs text-abyss-5">Opens in a new tab</div>}
   </>;
 
   return (
-    <Card className="pixel-lift group flex flex-col overflow-hidden hover:border-marine-2 focus-within:border-marine-2">
+    <Card className="pixel-lift group flex flex-col hover:border-marine-2 focus-within:border-marine-2">
       {newTabOnly
         ? <a href={prototype.url} target="_blank" rel="noopener noreferrer" className={previewClass} aria-label={`Open ${prototype.name} in a new tab`}>{preview}</a>
         : <Link to={viewerUrl} className={previewClass} aria-label={`Open ${prototype.name}`}>{preview}</Link>}

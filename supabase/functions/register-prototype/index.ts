@@ -25,6 +25,8 @@ type Payload = {
   archived: boolean;
   /** The gallery name of the prototype this one was started from, if any. */
   basedOn: string | null;
+  /** The zip behind the gallery's "Build on this" (a copy of the branch), if the prototype is live. */
+  downloadUrl: string | null;
   thumbnail: { base64: string; contentType: string } | null;
 };
 
@@ -91,6 +93,7 @@ function parse(body: unknown): Payload | string {
     pages: Number.isFinite(Number(input.pages)) ? Math.max(0, Math.floor(Number(input.pages))) : 0,
     archived: input.archived === true,
     basedOn: /^[a-z0-9][a-z0-9-]{0,59}$/.test(text(input.basedOn, 60)) ? text(input.basedOn, 60) : null,
+    downloadUrl: httpsUrl(input.downloadUrl),
     thumbnail,
   };
 }
@@ -181,6 +184,7 @@ Deno.serve(async (request) => {
         handoff_url: payload.handoffUrl,
         pages: payload.pages,
         based_on: payload.basedOn,
+        download_url: payload.downloadUrl,
         registered_at: new Date().toISOString(),
       },
       archived_at: payload.archived ? new Date().toISOString() : null,
