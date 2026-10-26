@@ -1,21 +1,37 @@
-import type * as React from "react";
-import { ArrowRight, ArrowUp, Download, ExternalLink, FileArchive, FolderOpen, MessageSquare, Sparkles, Terminal } from "lucide-react";
+import * as React from "react";
+import { ArrowRight, ArrowUp, Download, ExternalLink, FileArchive, FolderOpen, Loader2, MessageSquare, Sparkles, Terminal } from "lucide-react";
+import { toast } from "sonner";
 
 import { ClaudeMark } from "@/components/ClaudeMark";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { mantlRepositoryUrl as repositoryUrl, startDownload, templateGitHubUrl } from "@/lib/downloadAsset";
 
-const repositoryUrl = "https://github.com/myfintech/prototyping-in-mantl";
-// The zip itself, not the releases page, so the button starts the download.
-const templateDownloadUrl = `${repositoryUrl}/releases/download/latest/prototyping-in-mantl.zip`;
 const folderName = "prototyping-in-mantl";
+
+// Starts the template download through the download-asset function, which
+// works without a GitHub sign-in (the repository is private to the GitHub
+// organisation, so the plain link would answer "Not Found" to most people).
+function useTemplateDownload() {
+  const [pending, setPending] = React.useState(false);
+  const download = async (event: React.MouseEvent) => {
+    event.preventDefault();
+    if (pending) return;
+    setPending(true);
+    const result = await startDownload("template", templateGitHubUrl);
+    setPending(false);
+    if (!result.ok) toast.error("The download could not start", { description: `${result.error} If you are signed in to GitHub as a myfintech member, the GitHub link below works too.` });
+  };
+  return { pending, download };
+}
 
 const link = "text-marine-5 underline hover:text-marine-6";
 const code = "rounded bg-carbon-1 px-1 text-xs text-abyss-7";
 
 export function VibeCodeDialog() {
+  const { pending, download } = useTemplateDownload();
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -33,9 +49,9 @@ export function VibeCodeDialog() {
           </DialogHeader>
           <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
             <Button asChild size="lg">
-              <a href={templateDownloadUrl}>
-                <Download />
-                Download the template
+              <a href={templateGitHubUrl} onClick={download} aria-busy={pending}>
+                {pending ? <Loader2 className="animate-spin" /> : <Download />}
+                {pending ? "Preparing the download…" : "Download the template"}
               </a>
             </Button>
             <Button asChild variant="secondary" size="lg">
@@ -50,7 +66,7 @@ export function VibeCodeDialog() {
         {/* The steps sit on the dark marine canvas so they read as the main event. */}
         <ol className="canvas-dark grid gap-6 px-6 py-6 sm:grid-cols-2 sm:px-8">
           <Step number={1} title="Download and unzip the template" visual={<UnzipVisual />}>
-            <a href={templateDownloadUrl} className={link}>Download Prototyping in MANTL</a>, then double-click the zip to unzip it. You get a folder called <code className={code}>{folderName}</code>. Keep it somewhere easy to find, like Downloads.
+            <a href={templateGitHubUrl} onClick={download} className={link}>Download Prototyping in MANTL</a>, then double-click the zip to unzip it. You get a folder called <code className={code}>{folderName}</code>. Keep it somewhere easy to find, like Downloads.
           </Step>
           <Step number={2} title="Point Claude at the folder" visual={<OpenFolderVisual />}>
             <b>In the Claude desktop app:</b> open the <b>Code</b> tab and choose the <code className={code}>{folderName}</code> folder as the one to work in. <b>Or in a terminal:</b> go into the folder and run <code className={code}>claude</code>. Claude reads the folder’s instructions from there.

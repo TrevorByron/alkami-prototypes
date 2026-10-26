@@ -50,6 +50,11 @@ Setup, once:
 3. Add the Edge Function secret `MANTL_REGISTER_SECRET` (any long random string) and make sure `APP_URL` is set.
 4. In the GitHub repository, add the secrets `ALKAMI_PROTOTYPES_REGISTER_URL` (`https://<ref>.supabase.co/functions/v1/register-prototype`) and `ALKAMI_PROTOTYPES_REGISTER_SECRET` (the same string).
 
+Downloads from that repository (the template zip and each prototype's "Build on this" copy) go through the `download-asset` Edge Function, so any signed-in member can download them without a GitHub account: the repository is internal to the GitHub organisation, and its release links answer "Not Found" to anyone else. The function asks GitHub for a short-lived signed link with a read-only token and the browser downloads from GitHub directly.
+
+5. Deploy `download-asset` normally (JWT verification on): `npx supabase functions deploy download-asset --project-ref <ref>`.
+6. Add the Edge Function secret `GITHUB_ASSET_TOKEN`: a GitHub token that can read that repository's releases. A fine-grained personal access token limited to `myfintech/prototyping-in-mantl` with Contents: read is enough; `MANTL_REPOSITORY` overrides the repository name. Without the secret the buttons fall back to the plain GitHub links.
+
 ## Deploying to GitLab Pages
 
 The default branch publishes the Vite build through the `pages` job. The Vite base path is derived from `CI_PAGES_URL`, so project Pages URLs work without a SPA fallback.
